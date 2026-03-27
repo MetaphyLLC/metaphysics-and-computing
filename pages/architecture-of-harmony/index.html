@@ -30,7 +30,15 @@
     --mono:        'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   }
 
-  html { scroll-behavior: smooth; font-size: 16px; }
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+    overflow-y: scroll;
+    scrollbar-width: none;      /* Firefox */
+    -ms-overflow-style: none;   /* IE/Edge */
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar { display: none; }
   body {
     font-family: var(--sans);
     background: var(--dark);

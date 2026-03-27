@@ -512,6 +512,9 @@
     .intro, .beliefs-container { padding-left: 1.5rem; padding-right: 1.5rem; }
     .belief-header { padding: 1.8rem 1.6rem; }
     .belief-panel { padding: 0 1.6rem 1.8rem; }
+    /* Hide video on mobile — show static fallback image instead */
+    .hero-video { display: none !important; }
+    .hero-fallback-img { display: block !important; }
   }
   @media (max-width:600px) {
     .hero { padding: 4rem 1.2rem 2.5rem; }
