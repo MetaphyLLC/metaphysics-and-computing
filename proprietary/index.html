@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="canonical" href="https://www.metaphysicsandcomputing.com/proprietary/">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proprietary Research — Metaphysics and Computing</title>
 <meta name="description" content="Restricted access portal for Metaphy LLC proprietary research documents.">
@@ -343,17 +344,14 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
   width: 20px; z-index: 9998;
   pointer-events: auto;
 }
-.gate-back { position: absolute; top: 1.5rem; left: 1.5rem; font-family: 'Inter', sans-serif; font-size: .8rem; color: #94A3B8; text-decoration: none; transition: color 0.2s; z-index: 10000; }
-.gate-back:hover { color: #3D8C8C; }
 </style>
 </head>
 <body>
 
 <!-- Password Gate Overlay -->
 <div class="gate-overlay" id="gateOverlay">
-  <a href="/" class="gate-back">&larr; Back to Home</a>
   <img src="/assets/images/metaphy-logo-4k.png" alt="Metaphy LLC" class="gate-logo">
-  <h1 class="gate-title">Proprietary Research</h1>
+  <h2 class="gate-title">Proprietary Research</h2>
   <p class="gate-subtitle">Restricted Access &mdash; Authorized Personnel Only</p>
   <div class="gate-input-wrap">
     <input type="password" class="gate-input" id="gateInput" placeholder="Enter access code" autocomplete="off">
@@ -449,12 +447,39 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
 
 <div class="divider reveal"><div class="divider-line"></div></div>
 
-<div class="section" style="text-align:center; padding: 6rem 2rem;">
-  <p class="section-label">Proprietary Research</p>
-  <h2 class="section-title">Coming Soon</h2>
-  <div class="section-rule" style="margin: 1rem auto 2rem;"></div>
-  <p style="max-width:600px; margin:0 auto; font-family: var(--serif); font-size: 1.15rem; line-height: 1.88; color: var(--text);">Our proprietary research is being migrated to a secure hosting environment. Authorized personnel will receive updated access credentials when the migration is complete.</p>
-  <p style="margin-top: 2rem; font-family: var(--sans); font-size: .85rem; color: var(--text-dim);">Questions? Contact <a href="mailto:Logan@MetaphysicsandComputing.com" style="color: var(--teal);">Logan@MetaphysicsandComputing.com</a></p>
+<!-- Research Cards -->
+<div class="research-grid">
+
+  <div class="research-card reveal">
+    <span class="card-badge">Proprietary</span>
+    <h3>DRGFC-3D Benchmark</h3>
+    <p class="card-text">Three-dimensional performance benchmarks for Dodecahedral Recursive Geometric Fractal Compression, demonstrating compression ratios and reconstruction fidelity across test datasets.</p>
+    <a href="/proprietary/drgfc-3d/" class="research-btn">
+      View Research
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+    </a>
+  </div>
+
+  <div class="research-card reveal">
+    <span class="card-badge">Proprietary</span>
+    <h3>HMSS Limits</h3>
+    <p class="card-text">Theoretical and practical limits of the Heavenly Morning Star System, including scalability boundaries, entanglement constraints, and photonic throughput analysis.</p>
+    <a href="/proprietary/hmss-limits/" class="research-btn">
+      View Research
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+    </a>
+  </div>
+
+  <div class="research-card reveal">
+    <span class="card-badge">Proprietary</span>
+    <h3>QUAD Limits</h3>
+    <p class="card-text">Scalability analysis of the Quantum Universal Arrayed Domain, examining planetary-scale deployment constraints, network topology limits, and quantum coherence boundaries.</p>
+    <a href="/proprietary/quad-limits/" class="research-btn">
+      View Research
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+    </a>
+  </div>
+
 </div>
 
 <!-- Closing -->
