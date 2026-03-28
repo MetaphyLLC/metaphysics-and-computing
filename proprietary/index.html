@@ -343,12 +343,15 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
   width: 20px; z-index: 9998;
   pointer-events: auto;
 }
+.gate-back { position: absolute; top: 1.5rem; left: 1.5rem; font-family: 'Inter', sans-serif; font-size: .8rem; color: #94A3B8; text-decoration: none; transition: color 0.2s; z-index: 10000; }
+.gate-back:hover { color: #3D8C8C; }
 </style>
 </head>
 <body>
 
 <!-- Password Gate Overlay -->
 <div class="gate-overlay" id="gateOverlay">
+  <a href="/" class="gate-back">&larr; Back to Home</a>
   <img src="/assets/images/metaphy-logo-4k.png" alt="Metaphy LLC" class="gate-logo">
   <h1 class="gate-title">Proprietary Research</h1>
   <p class="gate-subtitle">Restricted Access &mdash; Authorized Personnel Only</p>
