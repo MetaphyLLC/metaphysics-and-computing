@@ -1,0 +1,113 @@
+'use strict';
+
+const UAIMC_URL = process.env.UAIMC_URL || 'http://localhost:8765';
+
+/**
+ * Query UAIMC for relevant knowledge snippets.
+ * @param {string} query - The user's query
+ * @param {number} limit - Max results to return
+ * @returns {Promise<Object>} UAIMC query response
+ */
+async function queryUAIMC(query, limit = 5) {
+  const url = `${UAIMC_URL}/query?q=${encodeURIComponent(query)}&limit=${limit}`;
+  const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!resp.ok) throw new Error(`UAIMC query failed: ${resp.status}`);
+  return resp.json();
+}
+
+/**
+ * Get assembled context for Oracle agent, optionally scoped to a query.
+ * @param {string} query - Optional query to scope context retrieval
+ * @returns {Promise<Object>} UAIMC context response
+ */
+async function getOracleContext(query) {
+  const q = query ? `&q=${encodeURIComponent(query)}` : '';
+  const url = `${UAIMC_URL}/context?agent=ORACLE${q}`;
+  const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!resp.ok) throw new Error(`UAIMC context failed: ${resp.status}`);
+  return resp.json();
+}
+
+/**
+ * Ingest an Oracle conversation into UAIMC.
+ * @param {Array<{role: string, content: string}>} messages - Conversation turns
+ * @param {string} sessionId - Session identifier
+ */
+async function ingestConversation(messages, sessionId) {
+  const content = messages
+    .map(m => `${m.role}: ${m.content}`)
+    .join('\n');
+
+  const payload = {
+    content,
+    source: 'oracle_conversation',
+    author: 'ORACLE',
+    channel: 'website',
+    metadata: { sessionId, timestamp: new Date().toISOString() }
+  };
+
+  const resp = await fetch(`${UAIMC_URL}/ingest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(10000)
+  });
+
+  if (!resp.ok) {
+    console.warn(`UAIMC ingest failed: ${resp.status}`);
+  }
+}
+
+/**
+ * Check UAIMC health.
+ * @returns {Promise<boolean>} true if healthy
+ */
+async function checkUAIMCHealth() {
+  try {
+    const resp = await fetch(`${UAIMC_URL}/health`, { signal: AbortSignal.timeout(3000) });
+    const data = await resp.json();
+    return data.status === 'healthy';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Build a combined RAG context string from query results + context endpoint.
+ * Uses /query for targeted results, falls back gracefully if UAIMC is unreachable.
+ * @param {string} userMessage - The user's message
+ * @returns {Promise<string>} Formatted context string for system prompt injection
+ */
+async function buildRagContext(userMessage) {
+  try {
+    const [queryResult, contextResult] = await Promise.allSettled([
+      queryUAIMC(userMessage, 5),
+      getOracleContext(userMessage)
+    ]);
+
+    const parts = [];
+
+    // Add top query results
+    if (queryResult.status === 'fulfilled' && queryResult.value.results?.length) {
+      const snippets = queryResult.value.results
+        .filter(r => r.relevance_score > 0.5)
+        .slice(0, 4)
+        .map(r => `[${r.source}] ${r.summary}`.substring(0, 400));
+      if (snippets.length) {
+        parts.push('RELEVANT KNOWLEDGE:\n' + snippets.join('\n---\n'));
+      }
+    }
+
+    // Add assembled context
+    if (contextResult.status === 'fulfilled' && contextResult.value.context) {
+      parts.push(contextResult.value.context.substring(0, 2000));
+    }
+
+    return parts.length ? parts.join('\n\n') : 'No specific context available.';
+  } catch (err) {
+    console.warn('RAG context build failed:', err.message);
+    return 'Knowledge base temporarily unavailable.';
+  }
+}
+
+module.exports = { queryUAIMC, getOracleContext, ingestConversation, checkUAIMCHealth, buildRagContext };
