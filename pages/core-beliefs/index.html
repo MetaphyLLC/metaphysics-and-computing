@@ -513,6 +513,15 @@
     .belief-header { padding: 1.8rem 1.6rem; }
     .belief-panel { padding: 0 1.6rem 1.8rem; }
   }
+  /* Portrait mobile: fit video/image to screen width instead of cropping sides */
+  @media (max-width:768px) and (orientation: portrait) {
+    .hero-video,
+    .hero-fallback-img {
+      object-fit: contain;
+      object-position: center center;
+      background: var(--dark);
+    }
+  }
   @media (max-width:600px) {
     .hero { padding: 4rem 1.2rem 2.5rem; }
     .intro, .beliefs-container { padding-left: 1.2rem; padding-right: 1.2rem; }
