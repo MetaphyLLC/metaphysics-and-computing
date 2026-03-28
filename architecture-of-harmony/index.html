@@ -1310,16 +1310,10 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
   }
 
   function stopAudio(){
-      g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1);
-      setTimeout(()=>{
-      }, 1200);
-    }
+  if(g){
+    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1);
   }
-
-    if(!playing){ startAudio(); audioBars.classList.remove('paused'); }
-    else { stopAudio(); audioBars.classList.add('paused'); }
-    playing=!playing;
-  });
+}
 
 })();
 </script>

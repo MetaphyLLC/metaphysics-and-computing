@@ -1334,18 +1334,6 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
     });
   }
 
-    if (!audioPlaying) {
-      if (!audioCtx) initAudio();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      gainNode.gain.linearRampToValueAtTime(0.035, audioCtx.currentTime + 1.5);
-      audioBars.classList.add('playing');
-      audioPlaying = true;
-    } else {
-      gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
-      audioBars.classList.remove('playing');
-      audioPlaying = false;
-    }
-  });
 })();
 </script>
 <script>
