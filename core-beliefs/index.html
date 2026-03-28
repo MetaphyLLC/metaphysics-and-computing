@@ -532,6 +532,17 @@
     .intro p { font-size: 1.05rem; }
   }
   </style>
+<style>
+/* Sleek Auto-Hide Scrollbar */
+html{scrollbar-width:thin;scrollbar-color:transparent transparent;transition:scrollbar-color 0.3s ease}
+html.scrollbar-visible{scrollbar-color:rgba(61,140,140,0.45) transparent}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:transparent;border-radius:3px;transition:background 0.3s ease}
+html.scrollbar-visible::-webkit-scrollbar-thumb{background:rgba(61,140,140,0.45)}
+html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140,0.7)}
+.scrollbar-hover-zone{position:fixed;top:0;right:0;bottom:0;width:20px;z-index:9998;pointer-events:auto}
+</style>
 </head>
 <body>
 
@@ -999,6 +1010,10 @@
     }
   });
 })();
+</script>
+<script>
+/* Sleek Auto-Hide Scrollbar */
+(function(){var html=document.documentElement,t=null;function s(){html.classList.add('scrollbar-visible');clearTimeout(t);t=setTimeout(function(){html.classList.remove('scrollbar-visible')},1500)}window.addEventListener('scroll',s,{passive:true});window.addEventListener('keydown',function(e){if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End','Space'].includes(e.key))s()});var z=document.createElement('div');z.className='scrollbar-hover-zone';document.body.appendChild(z);z.addEventListener('mouseenter',function(){html.classList.add('scrollbar-visible');clearTimeout(t)});z.addEventListener('mouseleave',function(){t=setTimeout(function(){html.classList.remove('scrollbar-visible')},1500)});window.addEventListener('touchstart',s,{passive:true})})();
 </script>
 </body>
 </html>

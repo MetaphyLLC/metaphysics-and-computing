@@ -11,7 +11,7 @@
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://metaphysicsandcomputing.com/crytography-of-being">
+  <meta property="og:url" content="https://metaphysicsandcomputing.com/cryptography-of-being">
   <meta property="og:title" content="The Cryptography of Being">
   <meta property="og:description" content="A Unified Theory of Mortal Optimization.">
   <meta property="og:image" content="/assets/images/morbius-lemniscate-qegg.png">
@@ -411,6 +411,17 @@ body {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Sleek Auto-Hide Scrollbar */
+html{scrollbar-width:thin;scrollbar-color:transparent transparent;transition:scrollbar-color 0.3s ease}
+html.scrollbar-visible{scrollbar-color:rgba(212,160,84,0.45) transparent}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:transparent;border-radius:3px;transition:background 0.3s ease}
+html.scrollbar-visible::-webkit-scrollbar-thumb{background:rgba(212,160,84,0.45)}
+html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(212,160,84,0.7)}
+.scrollbar-hover-zone{position:fixed;top:0;right:0;bottom:0;width:20px;z-index:9998;pointer-events:auto}
+</style>
 </head>
 <body>
 
@@ -900,6 +911,10 @@ body {
     playing=!playing;
   });
 })();
+</script>
+<script>
+/* Sleek Auto-Hide Scrollbar */
+(function(){var html=document.documentElement,t=null;function s(){html.classList.add('scrollbar-visible');clearTimeout(t);t=setTimeout(function(){html.classList.remove('scrollbar-visible')},1500)}window.addEventListener('scroll',s,{passive:true});window.addEventListener('keydown',function(e){if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End','Space'].includes(e.key))s()});var z=document.createElement('div');z.className='scrollbar-hover-zone';document.body.appendChild(z);z.addEventListener('mouseenter',function(){html.classList.add('scrollbar-visible');clearTimeout(t)});z.addEventListener('mouseleave',function(){t=setTimeout(function(){html.classList.remove('scrollbar-visible')},1500)});window.addEventListener('touchstart',s,{passive:true})})();
 </script>
 
 </body>
