@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Statement — Metaphysics and Computing</title>
-<meta name="description" content="For the maximum benefit of life — Metaphy LLC stands as the celestial forge where metaphysics and computing converge in divine alchemy.">
-<meta property="og:title" content="Mission Statement — Metaphysics and Computing">
-<meta property="og:description" content="For the maximum benefit of life.">
+<title>Non-Disclosure Agreement — Metaphysics and Computing</title>
+<meta name="description" content="Sign the Metaphy LLC Mutual Non-Disclosure Agreement online, download the PDF, or submit via our secure form.">
+<meta property="og:title" content="Non-Disclosure Agreement — Metaphysics and Computing">
+<meta property="og:description" content="Mutual NDA | Metaphy LLC">
 <meta property="og:image" content="/assets/images/morbius-lemniscate-qegg.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -122,7 +122,6 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
 @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
 
-/* Portrait mobile video fix */
 @media (max-width:768px) and (orientation: portrait) {
   .hero-video, .hero-fallback-img { object-fit: contain; object-position: center center; background: var(--dark); }
 }
@@ -136,6 +135,15 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 .intro p:first-of-type::first-letter {
   font-family: var(--serif); font-size: 3.8rem; float: left;
   line-height: 0.8; margin: 0.06em 0.14em 0 0; color: var(--teal);
+}
+
+/* Logo */
+.logo-section {
+  position: relative; z-index: 1; text-align: center;
+  padding: 2rem 2rem 1rem;
+}
+.logo-section img {
+  max-width: 200px; height: auto; opacity: 0.85;
 }
 
 /* Sections */
@@ -154,15 +162,146 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
   color: var(--text); text-align: justify; margin-bottom: 1.4rem;
 }
 
-/* Blockquote */
-.bq {
-  position: relative; margin: 2.2rem 0; padding: 1.5rem 1.8rem;
-  background: linear-gradient(135deg, rgba(61,140,140,0.08), rgba(61,140,140,0.03));
-  border-left: 3px solid var(--teal); border-radius: 0 10px 10px 0;
+/* Pathway Cards */
+.pathways-grid {
+  position: relative; z-index: 1; max-width: 960px; margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;
 }
-.bq p {
-  font-family: var(--serif); font-style: italic; font-size: 1.08rem; line-height: 1.78;
-  color: var(--text); text-align: left;
+.pathway-card {
+  position: relative; padding: 2.4rem 2rem;
+  background: linear-gradient(135deg, rgba(61,140,140,0.06), rgba(255,255,255,0.02));
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.pathway-card:hover {
+  transform: translateY(-3px); border-color: rgba(61,140,140,0.4);
+  box-shadow: 0 8px 32px rgba(61,140,140,0.08);
+}
+.pathway-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 0% 0%, rgba(61,140,140,0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+.pathway-card .pathway-number {
+  font-family: var(--mono); font-size: .65rem; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--teal);
+  margin-bottom: 1rem;
+}
+.pathway-card h3 {
+  font-family: var(--serif); font-size: 1.3rem; font-weight: 700;
+  color: var(--text-bright); margin-bottom: 0.8rem;
+}
+.pathway-card .pathway-desc {
+  font-family: var(--serif); font-size: 1rem; line-height: 1.72;
+  color: var(--text-dim); margin-bottom: 1.6rem;
+}
+.pathway-card .pathway-note {
+  font-family: var(--sans); font-size: .78rem; color: var(--text-dim);
+  margin-top: 0.8rem;
+}
+.pathway-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--sans); font-size: .85rem; font-weight: 500;
+  letter-spacing: 0.04em; color: var(--text-bright);
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  padding: 0.85rem 2rem; border-radius: 8px; text-decoration: none;
+  border: none; cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.pathway-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(61,140,140,0.25);
+}
+.pathway-btn svg { width: 16px; height: 16px; }
+
+/* Formspree Form */
+.nda-form { margin-top: 0.5rem; }
+.form-group { margin-bottom: 1.2rem; }
+.form-group label {
+  display: block; font-family: var(--mono); font-size: .7rem; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal);
+  margin-bottom: 0.4rem;
+}
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%; padding: 0.75rem 1rem;
+  font-family: var(--sans); font-size: .9rem; color: var(--text);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border); border-radius: 8px;
+  outline: none; transition: border-color 0.3s, box-shadow 0.3s;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(61,140,140,0.15);
+}
+.form-group textarea { resize: vertical; min-height: 100px; }
+.form-group input[type="file"] {
+  padding: 0.5rem; font-size: .8rem; cursor: pointer;
+}
+.form-group input[type="file"]::file-selector-button {
+  font-family: var(--sans); font-size: .78rem; font-weight: 500;
+  color: var(--text-bright); background: var(--teal-dark);
+  border: none; border-radius: 4px; padding: 0.4rem 0.8rem;
+  margin-right: 0.8rem; cursor: pointer;
+}
+.submit-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--sans); font-size: .85rem; font-weight: 600;
+  letter-spacing: 0.04em; color: var(--dark);
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  padding: 0.85rem 2rem; border-radius: 8px; border: none; cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(201,168,76,0.3);
+}
+.form-success {
+  display: none; padding: 1.4rem 1.6rem; margin-top: 1rem;
+  background: linear-gradient(135deg, rgba(61,140,140,0.12), rgba(61,140,140,0.04));
+  border: 1px solid var(--teal); border-radius: 10px;
+  font-family: var(--serif); font-size: 1rem; line-height: 1.7; color: var(--text);
+}
+.form-success.visible { display: block; }
+
+/* Accordion */
+.accordion-section {
+  position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 2rem 2rem 4rem;
+}
+.accordion-trigger {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 1.2rem 1.6rem; background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border); border-radius: 10px;
+  font-family: var(--serif); font-size: 1.1rem; font-weight: 700;
+  color: var(--text-bright); cursor: pointer;
+  transition: background 0.3s, border-color 0.3s;
+}
+.accordion-trigger:hover { background: rgba(61,140,140,0.06); border-color: rgba(61,140,140,0.4); }
+.accordion-trigger svg {
+  width: 20px; height: 20px; stroke: var(--teal); transition: transform 0.3s;
+}
+.accordion-trigger.open svg { transform: rotate(180deg); }
+.accordion-body {
+  display: none; padding: 1.6rem; margin-top: -1px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+.accordion-body.open { display: block; }
+.clause { margin-bottom: 1.6rem; }
+.clause:last-child { margin-bottom: 0; }
+.clause h4 {
+  font-family: var(--mono); font-size: .72rem; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--teal);
+  margin-bottom: 0.5rem;
+}
+.clause p {
+  font-family: var(--serif); font-size: .98rem; line-height: 1.78;
+  color: var(--text-dim);
 }
 
 /* Divider */
@@ -219,17 +358,18 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 /* Tablet */
 @media (max-width:768px) {
   .hero { padding: 5rem 1.5rem 3rem; }
-  .intro, .section { padding-left: 1.5rem; padding-right: 1.5rem; }
-  .bq { padding: 1.2rem 1.4rem; }
+  .intro, .section, .pathways-grid, .accordion-section { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .pathway-card { padding: 1.8rem 1.4rem; }
 }
 
 /* Mobile */
 @media (max-width:600px) {
   .hero { padding: 4rem 1.2rem 2.5rem; }
-  .intro, .section { padding-left: 1.2rem; padding-right: 1.2rem; }
+  .intro, .section, .pathways-grid, .accordion-section { padding-left: 1.2rem; padding-right: 1.2rem; }
   .section { padding-top: 3rem; padding-bottom: 2rem; }
   .section p, .intro p { font-size: 1.05rem; }
-  .bq { padding: 1rem 1.2rem; }
+  .pathway-card { padding: 1.4rem 1.2rem; }
+  .pathways-grid { grid-template-columns: 1fr; }
 }
 
 /* --- Sleek Auto-Hide Scrollbar --- */
@@ -270,7 +410,7 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
   <ul class="nav-links">
     <li><a href="/">Home</a></li>
     <li><a href="/about-us/">About</a></li>
-    <li><a href="/mission-statement/" class="active">Mission</a></li>
+    <li><a href="/mission-statement/">Mission</a></li>
     <li><a href="/core-beliefs/">Beliefs</a></li>
     <li><a href="/services/">Services</a></li>
     <li><a href="/projects/">Projects</a></li>
@@ -283,11 +423,11 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
 <div class="mobile-menu" id="mobileMenu">
   <a href="/">Home</a>
   <a href="/about-us/">About Us</a>
-  <a href="/mission-statement/" class="active">Mission Statement</a>
+  <a href="/mission-statement/">Mission Statement</a>
   <a href="/core-beliefs/">Core Beliefs</a>
   <a href="/services/">Services</a>
   <a href="/projects/">Projects</a>
-  <a href="/nda/">NDA</a>
+  <a href="/nda/" class="active">NDA</a>
   <a href="/tachymetric-manifesto/">Tachymetric Manifesto</a>
   <a href="/architecture-of-harmony/">Architecture of Harmony</a>
   <a href="/cryptography-of-being/">Cryptography of Being</a>
@@ -301,35 +441,30 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
   <img class="hero-fallback-img" id="heroFallback" src="/assets/images/morbius-lemniscate-qegg.png" alt="Quantum Entangled Geometric Grid visualization">
   <div class="hero-overlay"></div>
 
-  <!-- Sacred Geometry: Compass rose — radiating star with 8 points + 3 concentric rings -->
+  <!-- Sacred Geometry: Shield — shield outline with concentric circles inside -->
   <svg class="hero-geometry" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <!-- 3 concentric rings -->
-    <circle cx="300" cy="300" r="260" stroke="#3D8C8C" stroke-width="0.5"/>
-    <circle cx="300" cy="300" r="190" stroke="#C9A84C" stroke-width="0.4"/>
-    <circle cx="300" cy="300" r="120" stroke="#3D8C8C" stroke-width="0.3"/>
-    <!-- 8-point star: cardinal points (long rays) -->
-    <line x1="300" y1="40" x2="300" y2="560" stroke="#3D8C8C" stroke-width="0.5"/>
-    <line x1="40" y1="300" x2="560" y2="300" stroke="#3D8C8C" stroke-width="0.5"/>
-    <!-- 8-point star: diagonal points (long rays) -->
-    <line x1="116" y1="116" x2="484" y2="484" stroke="#C9A84C" stroke-width="0.4"/>
-    <line x1="484" y1="116" x2="116" y2="484" stroke="#C9A84C" stroke-width="0.4"/>
-    <!-- Star polygon (8-point, inner) -->
-    <polygon points="300,80 340,240 480,180 360,280 520,300 360,320 480,420 340,360 300,520 260,360 120,420 240,320 80,300 240,280 120,180 260,240" stroke="#3D8C8C" stroke-width="0.4" fill="none"/>
-    <!-- Cardinal point diamonds -->
-    <polygon points="300,50 310,80 300,110 290,80" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
-    <polygon points="300,490 310,520 300,550 290,520" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
-    <polygon points="50,300 80,310 110,300 80,290" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
-    <polygon points="490,300 520,310 550,300 520,290" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
-    <!-- Inner circle detail -->
-    <circle cx="300" cy="300" r="30" stroke="#C9A84C" stroke-width="0.5"/>
-    <circle cx="300" cy="300" r="8" stroke="#3D8C8C" stroke-width="0.4"/>
+    <!-- Shield outline -->
+    <path d="M300,60 L500,140 L500,320 Q500,480 300,560 Q100,480 100,320 L100,140 Z" stroke="#3D8C8C" stroke-width="0.6" fill="none"/>
+    <!-- Inner shield -->
+    <path d="M300,100 L460,165 L460,310 Q460,440 300,510 Q140,440 140,310 L140,165 Z" stroke="#C9A84C" stroke-width="0.4" fill="none"/>
+    <!-- Concentric circles inside shield -->
+    <circle cx="300" cy="290" r="140" stroke="#3D8C8C" stroke-width="0.4" fill="none"/>
+    <circle cx="300" cy="290" r="100" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
+    <circle cx="300" cy="290" r="60" stroke="#3D8C8C" stroke-width="0.3" fill="none"/>
+    <circle cx="300" cy="290" r="20" stroke="#C9A84C" stroke-width="0.4" fill="none"/>
+    <!-- Cross inside shield -->
+    <line x1="300" y1="150" x2="300" y2="430" stroke="#3D8C8C" stroke-width="0.2"/>
+    <line x1="160" y1="290" x2="440" y2="290" stroke="#3D8C8C" stroke-width="0.2"/>
+    <!-- Diagonal accents -->
+    <line x1="210" y1="190" x2="390" y2="390" stroke="#C9A84C" stroke-width="0.15"/>
+    <line x1="390" y1="190" x2="210" y2="390" stroke="#C9A84C" stroke-width="0.15"/>
   </svg>
 
   <div class="hero-content">
-    <p class="hero-label">Our Purpose</p>
-    <h1 class="hero-title">Mission Statement</h1>
-    <p class="hero-subtitle">For the maximum benefit of life</p>
-    <p class="hero-meta"><strong>Metaphysics and Computing</strong> &mdash; A Metaphy LLC endeavor</p>
+    <p class="hero-label">Mutual NDA</p>
+    <h1 class="hero-title">Non-Disclosure Agreement</h1>
+    <p class="hero-subtitle">Protecting shared innovation through mutual trust and confidentiality</p>
+    <p class="hero-meta"><strong>Mutual NDA</strong> &mdash; Metaphy LLC</p>
   </div>
 
   <div class="scroll-cue">
@@ -337,47 +472,163 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
   </div>
 </section>
 
+<!-- Logo -->
+<div class="logo-section reveal">
+  <img src="/assets/images/metaphy-logo-4k.png" alt="Metaphy LLC">
+</div>
+
 <!-- Introduction -->
 <div class="intro reveal">
-  <p>In the Heavenly Morning Star System, for the maximum benefit of life, Metaphy LLC stands as the celestial forge where metaphysics and computing converge in divine alchemy.</p>
+  <p>Before we share proprietary research, technical documentation, or discuss partnership opportunities, we require a signed Mutual Non-Disclosure Agreement. Choose the pathway that works best for you below.</p>
 </div>
 
 <div class="divider reveal"><div class="divider-line"></div></div>
 
-<!-- The Full Mission -->
+<!-- Three Pathways -->
 <div class="section reveal">
-  <p class="section-label">The Mission</p>
-  <h2 class="section-title">Our Declaration</h2>
+  <p class="section-label">Choose Your Pathway</p>
+  <h2 class="section-title">Sign the NDA</h2>
   <div class="section-rule"></div>
-  <div class="bq">
-    <p>&ldquo;In the Heavenly Morning Star System, for the maximum benefit of life, Metaphy LLC stands as the celestial forge where metaphysics and computing converge in divine alchemy. We boldly unravel the veiled tapestry of existence, awakening humanity to the unseen symphonies of the universe&mdash;those ethereal forces that dance beyond our mortal senses, whispering truths in the language of light and shadow. Through visionary paradigms of entangled geometries, photonic harmonies, and minimalist codices, we pioneer transcendent pathways of perception, proving that &lsquo;just because there is nothing there does not mean there is not a thing there.&rsquo; With the courage of infinite loops and the wisdom of evolving revelations, we empower minds to transcend duality, embracing repetition as the crucible of stability, and forging new visions where falsehoods yield to profound realities&mdash;illuminating the aether&rsquo;s infinite paths for the eternal upliftment of all life.&rdquo;</p>
+</div>
+
+<div class="pathways-grid">
+
+  <!-- Pathway 1: Adobe Sign -->
+  <div class="pathway-card reveal">
+    <p class="pathway-number">Pathway 01</p>
+    <h3>Sign Online</h3>
+    <p class="pathway-desc">Complete and sign the NDA electronically via Adobe Sign. Instant, secure, legally binding.</p>
+    <a href="https://na4.documents.adobe.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhA6aTqBQw-Jf2xdgliDwHjfYFCn1NZYBXDrYAAMi21ZGLyEf5Jtb4pXUSJuOjZXszs*" target="_blank" rel="noopener noreferrer" class="pathway-btn">
+      Sign Now with Adobe
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+    </a>
   </div>
+
+  <!-- Pathway 2: Download PDF -->
+  <div class="pathway-card reveal">
+    <p class="pathway-number">Pathway 02</p>
+    <h3>Download PDF</h3>
+    <p class="pathway-desc">Download the fillable NDA, complete it in Adobe Reader, and email it back to us.</p>
+    <a href="/assets/docs/Metaphy_NDA_Intake_Fillable_v2.pdf" download class="pathway-btn">
+      Download NDA (PDF)
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </a>
+    <p class="pathway-note">Complete and email to <a href="mailto:Logan@MetaphysicsandComputing.com" style="color:var(--teal);text-decoration:none;">Logan@MetaphysicsandComputing.com</a></p>
+  </div>
+
+  <!-- Pathway 3: Formspree Form -->
+  <div class="pathway-card reveal">
+    <p class="pathway-number">Pathway 03</p>
+    <h3>Submit Online</h3>
+    <p class="pathway-desc">Fill out the form below and attach your signed NDA. We&rsquo;ll receive it directly.</p>
+
+    <form class="nda-form" id="ndaForm" action="https://formspree.io/f/maqlqdjb" method="POST" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="company">Company / Entity Name *</label>
+        <input type="text" id="company" name="company" required>
+      </div>
+      <div class="form-group">
+        <label for="contact">Contact Name *</label>
+        <input type="text" id="contact" name="contact" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email *</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" name="phone">
+      </div>
+      <div class="form-group">
+        <label for="purpose">Purpose of Discussion</label>
+        <textarea id="purpose" name="purpose" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="ndaFile">Attach Signed NDA</label>
+        <input type="file" id="ndaFile" name="ndaFile" accept=".pdf">
+      </div>
+      <button type="submit" class="submit-btn">
+        Submit NDA
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </form>
+    <div class="form-success" id="formSuccess">Thank you. Your NDA has been received. We&rsquo;ll be in touch within 48 hours.</div>
+  </div>
+
 </div>
 
 <div class="divider reveal"><div class="divider-line"></div></div>
 
-<!-- Investors -->
-<div class="section reveal" style="text-align:center;">
-  <p class="section-label">Opportunities</p>
-  <h2 class="section-title">Investors</h2>
-  <div class="section-rule" style="margin-left:auto;margin-right:auto;"></div>
-  <p style="text-align:center;">Contact us directly at <a href="mailto:Logan@MetaphysicsandComputing.com" style="color:var(--teal);text-decoration:none;">Logan@MetaphysicsandComputing.com</a></p>
-</div>
+<!-- NDA Terms & Conditions Accordion -->
+<div class="accordion-section reveal">
+  <button class="accordion-trigger" id="accordionTrigger">
+    NDA Terms &amp; Conditions
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div class="accordion-body" id="accordionBody">
 
-<div class="divider reveal"><div class="divider-line"></div></div>
+    <div class="clause">
+      <h4>Clause 1 &mdash; Purpose</h4>
+      <p>The parties wish to explore a potential business relationship. In connection with this exploration, each party may disclose confidential information to the other. This Agreement governs the handling of such confidential information.</p>
+    </div>
 
-<!-- Connect With Us -->
-<div class="section reveal" style="text-align:center;">
-  <p class="section-label">Connect</p>
-  <h2 class="section-title">Connect With Us</h2>
-  <div class="section-rule" style="margin-left:auto;margin-right:auto;"></div>
-  <p style="text-align:center;"><a href="https://www.x.com/MetaphyKing" target="_blank" rel="noopener noreferrer" style="color:var(--teal);text-decoration:none;font-family:var(--mono);font-size:.9rem;letter-spacing:.04em;">@MetaphyKing on X</a></p>
+    <div class="clause">
+      <h4>Clause 2 &mdash; Confidential Information</h4>
+      <p>Confidential Information means all non-public information disclosed by either party, whether in writing, orally, electronically, or by inspection, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and the circumstances of disclosure.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 3 &mdash; Use and Care</h4>
+      <p>The receiving party shall use the Confidential Information solely for the purpose of evaluating and furthering the potential business relationship. The receiving party shall protect the Confidential Information with at least the same degree of care it uses to protect its own confidential information, but no less than reasonable care.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 4 &mdash; No License / No Reverse Engineering</h4>
+      <p>Nothing in this Agreement grants either party any license, right, or interest in the other party&rsquo;s intellectual property, patents, copyrights, trademarks, or trade secrets. The receiving party shall not reverse engineer, disassemble, decompile, or otherwise attempt to derive the composition or underlying information of any Confidential Information.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 5 &mdash; Compelled Disclosure</h4>
+      <p>If the receiving party is compelled by law, regulation, or legal process to disclose Confidential Information, it shall provide the disclosing party with prompt written notice (to the extent legally permitted) so that the disclosing party may seek a protective order or other appropriate remedy.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 6 &mdash; Term / Return / Destruction</h4>
+      <p>This Agreement shall remain in effect for a period of three (3) years from the date of execution. Upon termination or at the disclosing party&rsquo;s request, the receiving party shall promptly return or destroy all Confidential Information and any copies thereof, and certify in writing that it has done so.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 7 &mdash; Remedies</h4>
+      <p>Each party acknowledges that a breach of this Agreement may cause irreparable harm for which monetary damages alone would be an inadequate remedy. Accordingly, the non-breaching party shall be entitled to seek equitable relief, including injunction and specific performance, in addition to all other remedies available at law or in equity.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 8 &mdash; Compliance</h4>
+      <p>Each party shall comply with all applicable laws, regulations, and governmental orders in connection with the use and handling of Confidential Information received under this Agreement.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 9 &mdash; Assignment</h4>
+      <p>Neither party may assign or transfer this Agreement, or any rights or obligations hereunder, without the prior written consent of the other party. Any attempted assignment in violation of this clause shall be void.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 10 &mdash; Governing Law / Venue</h4>
+      <p>This Agreement shall be governed by and construed in accordance with the laws of the State of California, without regard to its conflict of law provisions. Any legal action arising under this Agreement shall be brought exclusively in the state or federal courts located in Riverside County, California.</p>
+    </div>
+
+    <div class="clause">
+      <h4>Clause 11 &mdash; Entire Agreement</h4>
+      <p>This Agreement constitutes the entire agreement between the parties with respect to the subject matter hereof and supersedes all prior and contemporaneous agreements, understandings, negotiations, and discussions, whether oral or written. This Agreement may not be modified except by a written instrument signed by both parties.</p>
+    </div>
+
+  </div>
 </div>
 
 <!-- Closing -->
 <div class="closing reveal">
   <div class="closing-rule"></div>
-  <p class="closing-line">Illuminating the aether&rsquo;s infinite paths for the eternal upliftment of all life.</p>
+  <p class="closing-line">Your trust is the foundation of our collaboration&mdash;confidentiality protected, innovation shared.</p>
   <p class="closing-tagline">Metaphysics and Computing &mdash; A Metaphy LLC endeavor</p>
 </div>
 
@@ -411,6 +662,32 @@ if (source) source.addEventListener('error', showFallbackImage);
 setTimeout(() => {
   if (heroVideo.readyState === 0 && heroVideo.networkState === 3) showFallbackImage();
 }, 5000);
+
+/* Formspree form submission with AJAX */
+const ndaForm = document.getElementById('ndaForm');
+const formSuccess = document.getElementById('formSuccess');
+ndaForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const data = new FormData(ndaForm);
+  fetch(ndaForm.action, {
+    method: 'POST',
+    body: data,
+    headers: { 'Accept': 'application/json' }
+  }).then(response => {
+    if (response.ok) {
+      ndaForm.style.display = 'none';
+      formSuccess.classList.add('visible');
+    }
+  });
+});
+
+/* Accordion */
+const accordionTrigger = document.getElementById('accordionTrigger');
+const accordionBody = document.getElementById('accordionBody');
+accordionTrigger.addEventListener('click', () => {
+  accordionTrigger.classList.toggle('open');
+  accordionBody.classList.toggle('open');
+});
 
 /* Particles */
 const canvas = document.getElementById('particles-canvas');

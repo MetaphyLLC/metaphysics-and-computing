@@ -34,8 +34,7 @@
   --serif: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
   --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 }
-html, body { overflow-y: scroll; scrollbar-width: none; -ms-overflow-style: none; scroll-behavior: smooth; font-size: 16px; }
-html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+html, body { overflow-y: scroll; scroll-behavior: smooth; font-size: 16px; }
 body { font-family: var(--sans); background: var(--dark); color: var(--text); line-height: 1.78; overflow-x: hidden; }
 #particles-canvas { position: fixed; inset:0; z-index:0; pointer-events:none; }
 
@@ -299,6 +298,34 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
   .feature-card { padding: 1.3rem 1.1rem; }
   .section p, .intro p, .feature-card .card-text { font-size: 1.05rem; }
   .bq { padding: 1rem 1.2rem; }
+}
+
+/* --- Sleek Auto-Hide Scrollbar --- */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+html.scrollbar-visible {
+  scrollbar-color: rgba(61,140,140,0.45) transparent;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+html.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: rgba(61,140,140,0.45);
+}
+html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background: rgba(61,140,140,0.7);
+}
+.scrollbar-hover-zone {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 20px; z-index: 9998;
+  pointer-events: auto;
 }
 </style>
 </head>
@@ -609,6 +636,39 @@ audioToggle.addEventListener('click', () => {
     audioBars.classList.remove('playing'); audioPlaying=false;
   }
 });
+
+/* Sleek Auto-Hide Scrollbar */
+(function() {
+  const html = document.documentElement;
+  let scrollTimer = null;
+  const FADE_DELAY = 1500;
+  function showScrollbar() {
+    html.classList.add('scrollbar-visible');
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      html.classList.remove('scrollbar-visible');
+    }, FADE_DELAY);
+  }
+  window.addEventListener('scroll', showScrollbar, { passive: true });
+  window.addEventListener('keydown', function(e) {
+    if (['ArrowDown','ArrowUp','PageDown','PageUp','Home','End','Space'].includes(e.key)) {
+      showScrollbar();
+    }
+  });
+  const hoverZone = document.createElement('div');
+  hoverZone.className = 'scrollbar-hover-zone';
+  document.body.appendChild(hoverZone);
+  hoverZone.addEventListener('mouseenter', function() {
+    html.classList.add('scrollbar-visible');
+    clearTimeout(scrollTimer);
+  });
+  hoverZone.addEventListener('mouseleave', function() {
+    scrollTimer = setTimeout(() => {
+      html.classList.remove('scrollbar-visible');
+    }, FADE_DELAY);
+  });
+  window.addEventListener('touchstart', showScrollbar, { passive: true });
+})();
 </script>
 </body>
 </html>
