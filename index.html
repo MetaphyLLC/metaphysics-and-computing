@@ -67,24 +67,28 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 
 /* Hero */
 .hero {
-  position: relative; z-index:1; min-height: 100vh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 6rem 2rem 4rem; overflow: hidden;
+  position: relative; z-index:1;
+  display: flex; flex-direction: column;
+  text-align: center; padding-top: 56px; overflow: hidden;
+}
+.hero-video-container {
+  position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden;
+  background: var(--dark);
 }
 .hero-video {
   position: absolute; inset:0; z-index:0;
-  width: 100%; height: 100%; object-fit: cover; opacity: 0.30; pointer-events: none;
+  width: 100%; height: 100%; object-fit: cover; opacity: 0.92; pointer-events: none;
 }
 .hero-fallback-img {
   position: absolute; inset:0; z-index:0;
-  width: 100%; height: 100%; object-fit: cover; opacity: 0.30; pointer-events: none; display: none;
+  width: 100%; height: 100%; object-fit: cover; opacity: 0.92; pointer-events: none; display: none;
 }
 .hero-overlay {
   position: absolute; inset:0; z-index:1;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(61,140,140,0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 50% at 30% 70%, rgba(201,168,76,0.06) 0%, transparent 60%),
-    linear-gradient(180deg, rgba(10,14,23,0.2) 0%, rgba(10,14,23,0.6) 50%, rgba(10,14,23,0.95) 100%);
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(61,140,140,0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 30% 70%, rgba(201,168,76,0.04) 0%, transparent 60%),
+    linear-gradient(180deg, transparent 0%, rgba(10,14,23,0.15) 60%, rgba(10,14,23,0.7) 100%);
   pointer-events: none;
 }
 .hero-geometry {
@@ -93,7 +97,10 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
   opacity: 0.06; animation: slowSpin 120s linear infinite; z-index: 2;
 }
 @keyframes slowSpin { to { transform: translate(-50%,-50%) rotate(360deg); } }
-.hero-content { position: relative; z-index: 3; max-width: 860px; }
+.hero-content {
+  position: relative; z-index: 3; max-width: 860px;
+  margin: 0 auto; padding: 3rem 2rem 4rem; text-align: center;
+}
 .hero-label {
   font-family: var(--mono); font-size: .7rem; font-weight: 600;
   letter-spacing: 0.22em; text-transform: uppercase; color: var(--teal);
@@ -115,7 +122,7 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 }
 .hero-meta strong { color: var(--teal); font-weight: 500; }
 .scroll-cue {
-  position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%); z-index: 3;
+  position: relative; z-index: 3; margin: 0 auto 1rem;
   opacity: 0; animation: fadeUp 0.8s 1.2s ease forwards;
 }
 .scroll-cue svg { animation: bounce 2s ease-in-out infinite; }
@@ -124,7 +131,8 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 
 /* Portrait mobile video fix */
 @media (max-width:768px) and (orientation: portrait) {
-  .hero-video, .hero-fallback-img { object-fit: contain; object-position: center center; background: var(--dark); }
+  .hero-video-container { aspect-ratio: 4/3; }
+  .hero-video, .hero-fallback-img { object-fit: cover; object-position: center center; background: var(--dark); }
 }
 
 /* Intro */
@@ -253,6 +261,11 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 }
 .site-footer a { color: var(--teal); text-decoration: none; }
 .site-footer a:hover { text-decoration: underline; }
+.footer-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 900px; margin: 0 auto 2rem; text-align: left; }
+.footer-col h4 { font-family: var(--mono); font-size: .7rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); margin-bottom: 0.75rem; }
+.footer-col a { display: block; font-family: var(--sans); font-size: .85rem; color: var(--text-dim); text-decoration: none; padding: 0.25rem 0; transition: color 0.2s; }
+.footer-col a:hover { color: var(--teal); }
+@media (max-width: 600px) { .footer-nav { grid-template-columns: 1fr; gap: 1.5rem; text-align: center; } }
 
 /* Scroll reveal */
 .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
@@ -285,14 +298,14 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 
 /* Tablet */
 @media (max-width:768px) {
-  .hero { padding: 5rem 1.5rem 3rem; }
+  .hero-content { padding: 2.5rem 1.5rem 3rem; }
   .intro, .section, .features-grid, .cta-section { padding-left: 1.5rem; padding-right: 1.5rem; }
   .feature-card { padding: 1.6rem 1.4rem; }
 }
 
 /* Mobile */
 @media (max-width:600px) {
-  .hero { padding: 4rem 1.2rem 2.5rem; }
+  .hero-content { padding: 2rem 1.2rem 2.5rem; }
   .intro, .section, .features-grid, .cta-section { padding-left: 1.2rem; padding-right: 1.2rem; }
   .section { padding-top: 3rem; padding-bottom: 2rem; }
   .feature-card { padding: 1.3rem 1.1rem; }
@@ -363,35 +376,37 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
 
 <!-- Hero -->
 <section class="hero">
-  <video class="hero-video" id="heroVideo" autoplay muted loop playsinline poster="/assets/images/home-hero-fallback.png">
-    <source src="/assets/videos/home-hero.mp4" type="video/mp4">
-  </video>
-  <img class="hero-fallback-img" id="heroFallback" src="/assets/images/home-hero-fallback.png" alt="Metaphysics and Computing hero visualization">
-  <div class="hero-overlay"></div>
+  <div class="hero-video-container">
+    <video class="hero-video" id="heroVideo" autoplay muted loop playsinline poster="/assets/images/home-hero-fallback.png">
+      <source src="/assets/videos/home-hero.mp4" type="video/mp4">
+    </video>
+    <img class="hero-fallback-img" id="heroFallback" src="/assets/images/home-hero-fallback.png" alt="Metaphysics and Computing hero visualization">
+    <div class="hero-overlay"></div>
 
-  <!-- Sacred Geometry: Full mandala with dodecahedron + lemniscate for Home -->
-  <svg class="hero-geometry" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <!-- Outer circle -->
-    <circle cx="300" cy="300" r="270" stroke="#3D8C8C" stroke-width="0.5"/>
-    <circle cx="300" cy="300" r="240" stroke="#3D8C8C" stroke-width="0.3"/>
-    <circle cx="300" cy="300" r="200" stroke="#C9A84C" stroke-width="0.3"/>
-    <!-- Dodecahedron pentagons -->
-    <polygon points="300,80 390,155 360,260 240,260 210,155" stroke="#3D8C8C" stroke-width="0.5" fill="none"/>
-    <polygon points="300,520 210,445 240,340 360,340 390,445" stroke="#3D8C8C" stroke-width="0.5" fill="none"/>
-    <polygon points="80,230 130,130 240,110 290,200 190,270" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
-    <polygon points="520,230 470,130 360,110 310,200 410,270" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
-    <polygon points="80,370 130,470 240,490 290,400 190,330" stroke="#3D8C8C" stroke-width="0.3" fill="none"/>
-    <polygon points="520,370 470,470 360,490 310,400 410,330" stroke="#3D8C8C" stroke-width="0.3" fill="none"/>
-    <!-- Lemniscate (infinity) -->
-    <path d="M150,300 C150,220 250,220 300,300 C350,380 450,380 450,300 C450,220 350,220 300,300 C250,380 150,380 150,300Z" stroke="#C9A84C" stroke-width="0.6" fill="none"/>
-    <!-- Inner star -->
-    <polygon points="300,140 335,240 440,240 355,300 380,400 300,345 220,400 245,300 160,240 265,240" stroke="#3D8C8C" stroke-width="0.4" fill="none"/>
-    <!-- Cross lines -->
-    <line x1="300" y1="30" x2="300" y2="570" stroke="#3D8C8C" stroke-width="0.2"/>
-    <line x1="30" y1="300" x2="570" y2="300" stroke="#3D8C8C" stroke-width="0.2"/>
-    <line x1="100" y1="100" x2="500" y2="500" stroke="#C9A84C" stroke-width="0.15"/>
-    <line x1="500" y1="100" x2="100" y2="500" stroke="#C9A84C" stroke-width="0.15"/>
-  </svg>
+    <!-- Sacred Geometry: Full mandala with dodecahedron + lemniscate for Home -->
+    <svg class="hero-geometry" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer circle -->
+      <circle cx="300" cy="300" r="270" stroke="#3D8C8C" stroke-width="0.5"/>
+      <circle cx="300" cy="300" r="240" stroke="#3D8C8C" stroke-width="0.3"/>
+      <circle cx="300" cy="300" r="200" stroke="#C9A84C" stroke-width="0.3"/>
+      <!-- Dodecahedron pentagons -->
+      <polygon points="300,80 390,155 360,260 240,260 210,155" stroke="#3D8C8C" stroke-width="0.5" fill="none"/>
+      <polygon points="300,520 210,445 240,340 360,340 390,445" stroke="#3D8C8C" stroke-width="0.5" fill="none"/>
+      <polygon points="80,230 130,130 240,110 290,200 190,270" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
+      <polygon points="520,230 470,130 360,110 310,200 410,270" stroke="#C9A84C" stroke-width="0.3" fill="none"/>
+      <polygon points="80,370 130,470 240,490 290,400 190,330" stroke="#3D8C8C" stroke-width="0.3" fill="none"/>
+      <polygon points="520,370 470,470 360,490 310,400 410,330" stroke="#3D8C8C" stroke-width="0.3" fill="none"/>
+      <!-- Lemniscate (infinity) -->
+      <path d="M150,300 C150,220 250,220 300,300 C350,380 450,380 450,300 C450,220 350,220 300,300 C250,380 150,380 150,300Z" stroke="#C9A84C" stroke-width="0.6" fill="none"/>
+      <!-- Inner star -->
+      <polygon points="300,140 335,240 440,240 355,300 380,400 300,345 220,400 245,300 160,240 265,240" stroke="#3D8C8C" stroke-width="0.4" fill="none"/>
+      <!-- Cross lines -->
+      <line x1="300" y1="30" x2="300" y2="570" stroke="#3D8C8C" stroke-width="0.2"/>
+      <line x1="30" y1="300" x2="570" y2="300" stroke="#3D8C8C" stroke-width="0.2"/>
+      <line x1="100" y1="100" x2="500" y2="500" stroke="#C9A84C" stroke-width="0.15"/>
+      <line x1="500" y1="100" x2="100" y2="500" stroke="#C9A84C" stroke-width="0.15"/>
+    </svg>
+  </div>
 
   <div class="hero-content">
     <p class="hero-label">Metaphy LLC Research Studio</p>
@@ -527,8 +542,30 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
 
 <!-- Footer -->
 <footer class="site-footer">
+  <div class="footer-nav">
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/">Home</a>
+      <a href="/about-us/">About Us</a>
+      <a href="/mission-statement/">Mission Statement</a>
+      <a href="/core-beliefs/">Core Beliefs</a>
+    </div>
+    <div class="footer-col">
+      <h4>Services &amp; Research</h4>
+      <a href="/services/">Services</a>
+      <a href="/projects/">Projects</a>
+      <a href="/nda/">NDA</a>
+      <a href="/proprietary/">Proprietary Research</a>
+    </div>
+    <div class="footer-col">
+      <h4>Publications</h4>
+      <a href="/tachymetric-manifesto/">Tachymetric Manifesto</a>
+      <a href="/architecture-of-harmony/">Architecture of Harmony</a>
+      <a href="/cryptography-of-being/">Cryptography of Being</a>
+    </div>
+  </div>
   <p>Copyright &copy; 2026 Metaphysics and Computing, a Metaphy LLC website.</p>
-  <p style="margin-top:0.5rem;"><a href="https://www.x.com/MetaphyKing" target="_blank" rel="noopener noreferrer">@MetaphyKing</a> &middot; <a href="mailto:Logan@MetaphysicsandComputing.com">Logan@MetaphysicsandComputing.com</a></p>
+  <p style="margin-top:0.5rem;"><a href="https://www.x.com/MetaphyKing">@MetaphyKing</a> &middot; <a href="mailto:Logan@MetaphysicsandComputing.com">Logan@MetaphysicsandComputing.com</a></p>
 </footer>
 
 <!-- Audio Toggle -->

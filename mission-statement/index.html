@@ -186,6 +186,11 @@ body { font-family: var(--sans); background: var(--dark); color: var(--text); li
 }
 .site-footer a { color: var(--teal); text-decoration: none; }
 .site-footer a:hover { text-decoration: underline; }
+.footer-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 900px; margin: 0 auto 2rem; text-align: left; }
+.footer-col h4 { font-family: var(--mono); font-size: .7rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); margin-bottom: 0.75rem; }
+.footer-col a { display: block; font-family: var(--sans); font-size: .85rem; color: var(--text-dim); text-decoration: none; padding: 0.25rem 0; transition: color 0.2s; }
+.footer-col a:hover { color: var(--teal); }
+@media (max-width: 600px) { .footer-nav { grid-template-columns: 1fr; gap: 1.5rem; text-align: center; } }
 
 /* Scroll reveal */
 .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
@@ -383,8 +388,30 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
 
 <!-- Footer -->
 <footer class="site-footer">
+  <div class="footer-nav">
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/">Home</a>
+      <a href="/about-us/">About Us</a>
+      <a href="/mission-statement/">Mission Statement</a>
+      <a href="/core-beliefs/">Core Beliefs</a>
+    </div>
+    <div class="footer-col">
+      <h4>Services &amp; Research</h4>
+      <a href="/services/">Services</a>
+      <a href="/projects/">Projects</a>
+      <a href="/nda/">NDA</a>
+      <a href="/proprietary/">Proprietary Research</a>
+    </div>
+    <div class="footer-col">
+      <h4>Publications</h4>
+      <a href="/tachymetric-manifesto/">Tachymetric Manifesto</a>
+      <a href="/architecture-of-harmony/">Architecture of Harmony</a>
+      <a href="/cryptography-of-being/">Cryptography of Being</a>
+    </div>
+  </div>
   <p>Copyright &copy; 2026 Metaphysics and Computing, a Metaphy LLC website.</p>
-  <p style="margin-top:0.5rem;"><a href="https://www.x.com/MetaphyKing" target="_blank" rel="noopener noreferrer">@MetaphyKing</a> &middot; <a href="mailto:Logan@MetaphysicsandComputing.com">Logan@MetaphysicsandComputing.com</a></p>
+  <p style="margin-top:0.5rem;"><a href="https://www.x.com/MetaphyKing">@MetaphyKing</a> &middot; <a href="mailto:Logan@MetaphysicsandComputing.com">Logan@MetaphysicsandComputing.com</a></p>
 </footer>
 
 <!-- Audio Toggle -->
