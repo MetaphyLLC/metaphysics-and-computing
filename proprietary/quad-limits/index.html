@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUAD Limits — Proprietary Research | Metaphysics and Computing</title>
+<meta name="description" content="Quantum Universal Arrayed Domain theoretical maximum limits. A 300-year trajectory from prototype to planetary dominance. Proprietary research by Metaphy LLC.">
+<meta property="og:title" content="QUAD Limits — Metaphysics and Computing">
+<meta property="og:description" content="Proprietary Research | Metaphy LLC">
+<meta property="og:image" content="/assets/images/morbius-lemniscate-qegg.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --teal: #3D8C8C; --teal-dark: #2A6363; --teal-light: #EAF4F4; --teal-glow: rgba(61,140,140,0.35);
+  --gold: #C9A84C; --gold-light: #F5E6B8;
+  --dark: #0A0E17; --dark2: #111827; --dark3: #1A2332;
+  --text: #E2E8F0; --text-dim: #94A3B8; --text-bright: #F8FAFC;
+  --gray-box: rgba(255,255,255,0.04); --border: rgba(61,140,140,0.2);
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --serif: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+html, body { overflow-y: scroll; scroll-behavior: smooth; font-size: 16px; }
+body { font-family: var(--sans); background: var(--dark); color: var(--text); line-height: 1.78; overflow-x: hidden; }
+#particles-canvas { position: fixed; inset:0; z-index:0; pointer-events:none; }
+
+/* Password Gate */
+.gate-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(10,14,23,0.97); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; transition: opacity 0.6s ease; }
+.gate-overlay.hidden { opacity: 0; pointer-events: none; }
+.gate-logo { max-width: 160px; height: auto; margin-bottom: 2.5rem; opacity: 0.85; }
+.gate-title { font-family: var(--serif); font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700; color: var(--text-bright); margin-bottom: 0.6rem; }
+.gate-subtitle { font-family: var(--sans); font-size: .85rem; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2rem; }
+.gate-input-wrap { position: relative; margin-bottom: 1rem; }
+.gate-input { width: 300px; max-width: 80vw; padding: 0.85rem 1.2rem; font-family: var(--sans); font-size: .95rem; color: var(--text); background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; outline: none; text-align: center; transition: border-color 0.3s, box-shadow 0.3s; }
+.gate-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(61,140,140,0.15); }
+.gate-input.shake { animation: shakeInput 0.5s ease; }
+@keyframes shakeInput { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+.gate-btn { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-size: .85rem; font-weight: 600; letter-spacing: 0.04em; color: var(--dark); background: linear-gradient(135deg, var(--gold), var(--gold-light)); padding: 0.85rem 2.4rem; border-radius: 8px; border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+.gate-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(201,168,76,0.3); }
+.gate-error { font-family: var(--sans); font-size: .8rem; color: #e74c3c; margin-top: 0.8rem; min-height: 1.2rem; }
+
+/* Nav */
+.top-nav { position: fixed; top:0; left:0; right:0; z-index:100; backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6); background: rgba(10,14,23,0.75); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; transition: transform .35s ease; }
+.top-nav.hidden { transform: translateY(-100%); }
+.nav-brand { font-family: var(--serif); font-size: .95rem; color: var(--teal); letter-spacing: .04em; white-space: nowrap; text-decoration: none; }
+.nav-links { display:flex; gap:1.4rem; list-style:none; }
+.nav-links a { color: var(--text-dim); text-decoration:none; font-size:.75rem; letter-spacing:.06em; text-transform:uppercase; transition: color .25s; }
+.nav-links a:hover, .nav-links a.active { color: var(--teal); }
+.progress-bar { position:absolute; bottom:0; left:0; height:2px; background: linear-gradient(90deg, var(--teal), var(--gold)); width:0; transition: width .15s linear; }
+.hamburger { display:none; background:none; border:none; cursor:pointer; padding:0.5rem; }
+.hamburger svg { width:22px; height:22px; stroke:var(--text-dim); transition: stroke .25s; }
+.hamburger:hover svg { stroke: var(--teal); }
+.mobile-menu { display:none; position:fixed; top:56px; left:0; right:0; background:rgba(10,14,23,0.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); padding:1rem 2rem; z-index:99; }
+.mobile-menu.open { display:block; }
+.mobile-menu a { display:block; padding:0.7rem 0; color:var(--text-dim); text-decoration:none; font-size:.85rem; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.04); transition:color .25s; }
+.mobile-menu a:last-child { border-bottom:none; }
+.mobile-menu a:hover { color:var(--teal); }
+
+/* Hero */
+.hero { position:relative; min-height:70vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6rem 2rem 4rem; overflow:hidden; z-index:1; }
+.hero-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.18; z-index:-2; }
+.hero-fallback { display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.18; z-index:-2; }
+.hero-geometry { position:absolute; top:50%; left:50%; width: clamp(320px,50vw,600px); height: clamp(320px,50vw,600px); transform:translate(-50%,-50%); opacity:0.06; z-index:-1; overflow:visible; animation: slowSpin 120s linear infinite; }
+@keyframes slowSpin { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+.hero-overlay { position:absolute; inset:0; background: linear-gradient(180deg, rgba(10,14,23,0.55) 0%, var(--dark) 100%); z-index:-1; }
+.hero-label { font-family: var(--mono); font-size: .7rem; letter-spacing: .18em; color: var(--gold); text-transform: uppercase; margin-bottom: .5rem; }
+.hero h1 { font-family: var(--serif); font-size: clamp(2.2rem, 5vw, 3.8rem); color: var(--text-bright); font-weight: 700; line-height: 1.18; max-width: 800px; }
+.hero-meta { font-family: var(--sans); font-size: .85rem; color: var(--text-dim); margin-top: 1rem; letter-spacing: .04em; }
+
+/* Back Link */
+.back-link-wrap { position:relative; z-index:1; max-width: 900px; margin: -1rem auto 2rem; padding: 0 2rem; }
+.back-link { font-family: var(--sans); font-size: .85rem; color: var(--teal); text-decoration: none; letter-spacing: .03em; transition: color .25s; }
+.back-link:hover { color: var(--gold); }
+
+/* Intro */
+.intro { position:relative; z-index:1; max-width:900px; margin:0 auto 3rem; padding:0 2rem; }
+.intro p { font-family: var(--serif); font-size: 1.15rem; line-height: 1.9; color: var(--text); }
+.intro p::first-letter { font-size: 3.4rem; float: left; line-height: 0.85; margin: 0.08em 0.12em 0 0; color: var(--teal); font-weight: 700; }
+
+/* Sections */
+.section { position:relative; z-index:1; max-width:900px; margin:0 auto 2.5rem; padding:2.5rem 2rem; background: var(--gray-box); border:1px solid var(--border); border-radius:14px; }
+.section-wide { max-width: 1200px; }
+.section h2 { font-family: var(--serif); font-size: 1.6rem; color: var(--text-bright); margin-bottom: 1.5rem; }
+.section p { margin-bottom: 1rem; }
+.section-desc { color: var(--text-dim); font-size: .95rem; margin-bottom: 1.5rem; }
+.category-title { font-family: var(--sans); font-size: 1rem; font-weight: 600; color: var(--teal); margin: 2rem 0 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border); }
+.category-title:first-child { margin-top: 0; }
+
+/* Era Grid (5 columns) */
+.era-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin: 1.5rem 0; }
+.era-card { position: relative; background: var(--gray-box); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem 1rem; text-align: center; transition: transform 0.3s, border-color 0.3s; overflow: hidden; }
+.era-card::before { content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 3px; border-radius: 0 0 3px 3px; }
+.era-card.today::before { background: var(--teal); }
+.era-card.y25::before { background: #06b6d4; }
+.era-card.y50::before { background: #a855f7; }
+.era-card.y100::before { background: #ff6b35; }
+.era-card.y300::before { background: var(--gold); }
+.era-card:hover { transform: translateY(-4px); border-color: var(--gold); }
+.era-year { font-family: var(--mono); font-size: 2rem; font-weight: 600; color: var(--text-bright); }
+.era-label { font-family: var(--sans); font-size: .7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.8rem; }
+.era-attain { display: inline-block; background: rgba(61,140,140,0.12); padding: 4px 10px; border-radius: 12px; font-family: var(--mono); font-size: .65rem; color: var(--teal); margin-bottom: 0.8rem; }
+.era-tech { font-family: var(--sans); font-size: .75rem; color: var(--text-dim); line-height: 1.5; min-height: 50px; }
+.era-flops { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.04); }
+.era-flops .value { font-family: var(--mono); font-size: 1.3rem; font-weight: 600; color: var(--gold); }
+.era-flops .label { font-family: var(--sans); font-size: .65rem; color: var(--text-dim); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1rem 0; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--teal) transparent; }
+.table-wrap::-webkit-scrollbar { height: 5px; }
+.table-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--teal); border-radius: 3px; }
+.data-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: .75rem; min-width: 750px; }
+.data-table th, .data-table td { padding: 0.6rem 0.7rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.data-table th { background: rgba(61,140,140,0.1); color: var(--teal); font-weight: 600; text-transform: uppercase; font-size: .65rem; letter-spacing: 0.05em; }
+.data-table tr:hover { background: rgba(255,255,255,0.02); }
+.metric { color: var(--text); font-weight: 500; }
+.metric-note { font-size: .65rem; color: var(--text-dim); display: block; margin-top: 2px; }
+.val-today { color: var(--teal); }
+.val-25 { color: #06b6d4; }
+.val-50 { color: #a855f7; }
+.val-100 { color: #ff6b35; }
+.val-300 { color: var(--gold); font-weight: 600; }
+.attain-badge { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: .55rem; font-weight: 600; margin-left: 4px; }
+.attain-high { background: rgba(61,140,140,0.15); color: var(--teal); }
+.attain-med { background: rgba(6,182,212,0.15); color: #06b6d4; }
+.attain-low { background: rgba(168,85,247,0.15); color: #a855f7; }
+.attain-spec { background: rgba(201,168,76,0.15); color: var(--gold); }
+
+/* Charts */
+.chart-container { position: relative; height: 320px; margin: 1rem 0; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1.2rem; border: 1px solid rgba(255,255,255,0.04); }
+.chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin: 1rem 0; }
+
+/* Physics Box */
+.physics-box { background: rgba(201,168,76,0.05); border: 1px solid rgba(201,168,76,0.2); border-radius: 14px; padding: 2rem; margin: 1.5rem 0; }
+.physics-title { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; color: var(--gold); margin-bottom: 1.2rem; }
+.physics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.physics-item { background: rgba(0,0,0,0.25); padding: 1.2rem; border-radius: 10px; }
+.physics-item .name { font-family: var(--sans); font-weight: 600; color: var(--gold); font-size: .85rem; margin-bottom: 0.4rem; }
+.physics-item .value { font-family: var(--mono); color: var(--text-bright); font-size: 1.1rem; font-weight: 600; }
+.physics-item .desc { font-family: var(--sans); color: var(--text-dim); font-size: .75rem; margin-top: 0.3rem; }
+
+/* Summary */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.summary-card { background: var(--gray-box); border: 1px solid var(--border); border-radius: 12px; padding: 1.3rem; text-align: center; transition: transform 0.3s, border-color 0.3s; }
+.summary-card:hover { border-color: var(--gold); transform: translateY(-3px); }
+.summary-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+.summary-value { font-family: var(--mono); font-size: 1.5rem; font-weight: 600; color: var(--text-bright); }
+.summary-label { font-family: var(--sans); font-size: .75rem; color: var(--text-dim); margin-top: 0.3rem; }
+.summary-sub { font-family: var(--mono); font-size: .6rem; color: var(--gold); margin-top: 0.3rem; }
+
+/* Disclaimer */
+.disclaimer { max-width: 1000px; margin: 2rem auto; padding: 1.5rem; background: rgba(201,168,76,0.05); border: 1px solid rgba(201,168,76,0.2); border-radius: 12px; color: var(--text-dim); font-size: .85rem; position: relative; z-index: 1; }
+.disclaimer strong { color: var(--gold); }
+
+.divider { border:none; border-top:1px solid var(--border); margin:3rem auto; max-width:200px; }
+footer { position:relative; z-index:1; text-align:center; padding:2.5rem 2rem; border-top:1px solid var(--border); }
+footer p { font-family:var(--sans); font-size:.75rem; color:var(--text-dim); letter-spacing:.04em; }
+footer a { color: var(--teal); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+/* Audio */
+.audio-toggle { position:fixed; bottom:1.2rem; right:1.2rem; z-index:50; display:flex; align-items:center; gap:0.6rem; background:rgba(10,14,23,0.8); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:40px; padding:0.5rem 1rem; cursor:pointer; transition: box-shadow .3s; }
+.audio-toggle:hover { box-shadow:0 0 16px var(--teal-glow); }
+.audio-bars { display:flex; gap:2px; align-items:flex-end; height:16px; }
+.audio-bars span { display:block; width:3px; background:var(--teal); border-radius:1px; opacity:0.3; transition:height .3s, opacity .3s; }
+.audio-bars span:nth-child(1){height:6px} .audio-bars span:nth-child(2){height:10px} .audio-bars span:nth-child(3){height:14px} .audio-bars span:nth-child(4){height:8px}
+.audio-bars.playing span { opacity:1; animation: barPulse 0.8s ease-in-out infinite alternate; }
+.audio-bars.playing span:nth-child(1){animation-delay:0s} .audio-bars.playing span:nth-child(2){animation-delay:0.15s} .audio-bars.playing span:nth-child(3){animation-delay:0.3s} .audio-bars.playing span:nth-child(4){animation-delay:0.45s}
+@keyframes barPulse { 0%{height:4px} 100%{height:16px} }
+.audio-label { font-family:var(--mono); font-size:.6rem; color:var(--text-dim); letter-spacing:.08em; text-transform:uppercase; }
+
+.reveal { opacity:0; transform:translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+
+/* Responsive */
+@media (max-width:1400px) { .era-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width:900px) { .era-grid { grid-template-columns: repeat(2, 1fr); } .chart-grid { grid-template-columns: 1fr; } }
+@media (max-width:768px) {
+  .nav-links { display:none; } .hamburger { display:block; }
+  .hero h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); }
+  .era-grid { grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  .era-card { padding: 1.2rem 0.8rem; }
+  .era-year { font-size: 1.6rem; }
+  .chart-container { height: 260px; }
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .physics-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width:600px) {
+  .hero { padding: 4rem 1.2rem 2.5rem; }
+  .intro, .section { padding-left: 1.2rem; padding-right: 1.2rem; }
+  .section { padding-top: 2rem; padding-bottom: 1.5rem; }
+  .section p, .intro p { font-size: 1.05rem; }
+  .era-grid { grid-template-columns: 1fr; }
+  .data-table { font-size: .65rem; }
+  .data-table th, .data-table td { padding: 0.5rem 0.3rem; }
+  .attain-badge { display: none; }
+  .physics-grid { grid-template-columns: 1fr; }
+  .summary-grid { gap: 0.6rem; }
+  .summary-card { padding: 1rem; }
+  .summary-value { font-size: 1.2rem; }
+  .gate-input { width: 260px; }
+}
+
+/* Auto-Hide Scrollbar */
+html { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0.3s ease; }
+html.scrollbar-visible { scrollbar-color: rgba(61,140,140,0.45) transparent; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; transition: background 0.3s ease; }
+html.scrollbar-visible::-webkit-scrollbar-thumb { background: rgba(61,140,140,0.45); }
+html.scrollbar-visible::-webkit-scrollbar-thumb:hover { background: rgba(61,140,140,0.7); }
+.scrollbar-hover-zone { position: fixed; top: 0; right: 0; bottom: 0; width: 20px; z-index: 9998; pointer-events: auto; }
+</style>
+</head>
+<body>
+
+<!-- Password Gate -->
+<div class="gate-overlay" id="gateOverlay">
+  <img src="/assets/images/metaphy-logo-4k.png" alt="Metaphy LLC" class="gate-logo">
+  <h1 class="gate-title">Proprietary Research</h1>
+  <p class="gate-subtitle">Restricted Access &mdash; Authorized Personnel Only</p>
+  <div class="gate-input-wrap"><input type="password" class="gate-input" id="gateInput" placeholder="Enter access code" autocomplete="off"></div>
+  <button type="button" class="gate-btn" id="gateBtn">Enter</button>
+  <p class="gate-error" id="gateError"></p>
+</div>
+
+<canvas id="particles-canvas"></canvas>
+
+<!-- Nav -->
+<nav class="top-nav" id="topNav">
+  <a href="/" class="nav-brand">Metaphysics &amp; Computing</a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="/about-us">About</a></li>
+    <li><a href="/projects">Projects</a></li>
+    <li><a href="/services">Services</a></li>
+    <li><a href="/nda">NDA</a></li>
+    <li><a href="/proprietary" class="active">Proprietary</a></li>
+  </ul>
+  <button type="button" class="hamburger" id="hamburgerBtn" aria-label="Menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="progress-bar" id="progressBar"></div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/">Home</a><a href="/about-us">About Us</a><a href="/mission-statement">Mission</a><a href="/projects">Projects</a><a href="/services">Services</a><a href="/nda">NDA</a><a href="/proprietary" class="active">Proprietary</a>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <video class="hero-video" autoplay muted loop playsinline><source src="/assets/videos/morbius-lemniscate-qegg.mp4" type="video/mp4"></video>
+  <img class="hero-fallback" src="/assets/images/morbius-lemniscate-qegg.png" alt="">
+  <!-- Sacred Geometry: Network Nodes -->
+  <svg class="hero-geometry" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="200" cy="100" r="8" fill="none" stroke="#3D8C8C" stroke-width="1"/>
+    <circle cx="100" cy="200" r="8" fill="none" stroke="#3D8C8C" stroke-width="1"/>
+    <circle cx="300" cy="200" r="8" fill="none" stroke="#3D8C8C" stroke-width="1"/>
+    <circle cx="200" cy="300" r="8" fill="none" stroke="#3D8C8C" stroke-width="1"/>
+    <circle cx="140" cy="140" r="6" fill="none" stroke="#C9A84C" stroke-width="0.8"/>
+    <circle cx="260" cy="140" r="6" fill="none" stroke="#C9A84C" stroke-width="0.8"/>
+    <circle cx="140" cy="260" r="6" fill="none" stroke="#C9A84C" stroke-width="0.8"/>
+    <circle cx="260" cy="260" r="6" fill="none" stroke="#C9A84C" stroke-width="0.8"/>
+    <line x1="200" y1="100" x2="100" y2="200" stroke="#3D8C8C" stroke-width="0.5"/>
+    <line x1="200" y1="100" x2="300" y2="200" stroke="#3D8C8C" stroke-width="0.5"/>
+    <line x1="100" y1="200" x2="200" y2="300" stroke="#3D8C8C" stroke-width="0.5"/>
+    <line x1="300" y1="200" x2="200" y2="300" stroke="#3D8C8C" stroke-width="0.5"/>
+    <line x1="200" y1="100" x2="140" y2="140" stroke="#C9A84C" stroke-width="0.4"/>
+    <line x1="200" y1="100" x2="260" y2="140" stroke="#C9A84C" stroke-width="0.4"/>
+    <line x1="100" y1="200" x2="140" y2="140" stroke="#C9A84C" stroke-width="0.4"/>
+    <line x1="100" y1="200" x2="140" y2="260" stroke="#C9A84C" stroke-width="0.4"/>
+    <line x1="300" y1="200" x2="260" y2="140" stroke="#C9A84C" stroke-width="0.4"/>
+    <line x1="300" y1="200" x2="260" y2="260" stroke="#C9A84C" stroke-width="0.4"/>
+    <line x1="200" y1="300" x2="140" y2="260" stroke="#C9A84C" stroke-width="0.4"/>
+    <line x1="200" y1="300" x2="260" y2="260" stroke="#C9A84C" stroke-width="0.4"/>
+    <line x1="140" y1="140" x2="260" y2="260" stroke="#3D8C8C" stroke-width="0.3" stroke-dasharray="4 4"/>
+    <line x1="260" y1="140" x2="140" y2="260" stroke="#3D8C8C" stroke-width="0.3" stroke-dasharray="4 4"/>
+    <circle cx="200" cy="200" r="140" fill="none" stroke="#3D8C8C" stroke-width="0.3" stroke-dasharray="2 6"/>
+  </svg>
+  <div class="hero-overlay"></div>
+  <span class="hero-label">Proprietary Research &bull; Metaphy LLC</span>
+  <h1>QUAD Limits</h1>
+  <p class="hero-meta">Quantum Universal Arrayed Domain &mdash; From Prototype to Planetary Dominance</p>
+</section>
+
+<!-- Back Link -->
+<div class="back-link-wrap"><a href="/proprietary/" class="back-link">&larr; Back to Proprietary Research</a></div>
+
+<!-- Intro -->
+<div class="intro reveal">
+  <p>Projected theoretical limits from today's $35K prototype to multiplanetary universal scale, grounded in physics (Bekenstein bound, Landauer limit) and realistic technology trajectories. A 300-year trajectory spanning five technological eras.</p>
+</div>
+
+<!-- Era Timeline -->
+<div class="section section-wide reveal">
+  <h2>Evolution Timeline</h2>
+  <p class="section-desc">Projected theoretical limits grounded in physics and realistic technology trajectories. Attainability percentages decrease with time horizon due to compounding uncertainties.</p>
+  <div class="era-grid">
+    <div class="era-card today">
+      <div class="era-year">2025</div>
+      <div class="era-label">Present Day</div>
+      <div class="era-attain">95-100% Attainable</div>
+      <div class="era-tech">Single-Unit Prototype<br>Dual RTX 5090<br>Lab Entanglement</div>
+      <div class="era-flops"><div class="value">5.24e15</div><div class="label">PFLOPS</div></div>
+    </div>
+    <div class="era-card y25">
+      <div class="era-year">2050</div>
+      <div class="era-label">25 Years</div>
+      <div class="era-attain">60-80% Attainable</div>
+      <div class="era-tech">Early Global Rollout<br>Photonic Hybrids<br>100km Repeaters</div>
+      <div class="era-flops"><div class="value">6e20</div><div class="label">ExaFLOPS Network</div></div>
+    </div>
+    <div class="era-card y50">
+      <div class="era-year">2075</div>
+      <div class="era-label">50 Years</div>
+      <div class="era-attain">40-60% Attainable</div>
+      <div class="era-tech">Global Saturation<br>Anyon Resilience<br>Yottascale Units</div>
+      <div class="era-flops"><div class="value">5e27</div><div class="label">ZettaFLOPS Network</div></div>
+    </div>
+    <div class="era-card y100">
+      <div class="era-year">2125</div>
+      <div class="era-label">100 Years</div>
+      <div class="era-attain">20-40% Attainable</div>
+      <div class="era-tech">Planetary Dominance<br>Reversible Compute<br>Near-0K Approaches</div>
+      <div class="era-flops"><div class="value">3e41</div><div class="label">RonnoFLOPS Network</div></div>
+    </div>
+    <div class="era-card y300">
+      <div class="era-year">2325</div>
+      <div class="era-label">300 Years</div>
+      <div class="era-attain">&lt;10% Attainable</div>
+      <div class="era-tech">Multiplanetary Universal<br>Bekenstein Capped<br>Heat Death Speculative</div>
+      <div class="era-flops"><div class="value">~1e55</div><div class="label">Universe Cap</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Core Compute -->
+<div class="section section-wide reveal">
+  <h2>Core Compute Limits</h2>
+  <div class="category-title">Processing Power</div>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Metric</th><th>2025</th><th>2050</th><th>2075</th><th>2125</th><th>2325</th></tr></thead>
+    <tbody>
+      <tr><td class="metric">FLOPS (per unit)<span class="metric-note">Floating Point Ops/Sec</span></td><td class="val-today">5.24e15 <span class="attain-badge attain-high">PFLOPS</span></td><td class="val-25">6.09e18 <span class="attain-badge attain-med">ExaFLOPS</span></td><td class="val-50">5.31e21 <span class="attain-badge attain-low">ZettaFLOPS</span></td><td class="val-100">2.95e29 <span class="attain-badge attain-low">RonnoFLOPS</span></td><td class="val-300">1e40+ <span class="attain-badge attain-spec">Quetta+</span></td></tr>
+      <tr><td class="metric">Total Network FLOPS<span class="metric-note">Aggregate Compute</span></td><td class="val-today">5.24e15</td><td class="val-25">6e20</td><td class="val-50">5e27</td><td class="val-100">3e41</td><td class="val-300">~1e55 (cap)</td></tr>
+      <tr><td class="metric">CPS (Hz)<span class="metric-note">Cycles Per Second</span></td><td class="val-today">3.92e11</td><td class="val-25">2.27e15</td><td class="val-50">1.31e19</td><td class="val-100">4.41e26</td><td class="val-300">1e35+</td></tr>
+      <tr><td class="metric">FPS<span class="metric-note">Frames Per Second</span></td><td class="val-today">1.78</td><td class="val-25">2.3e6</td><td class="val-50">2.5e9</td><td class="val-100">8.38e17</td><td class="val-300">1e24+ (Planck)</td></tr>
+      <tr><td class="metric">AI Perf (FP16)<span class="metric-note">Half-Precision AI</span></td><td class="val-today">0.5e16</td><td class="val-25">1.2e20</td><td class="val-50">1.0e24</td><td class="val-100">5.0e31</td><td class="val-300">1e40+ (Omniscient)</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="category-title">Network &amp; Latency</div>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Metric</th><th>2025</th><th>2050</th><th>2075</th><th>2125</th><th>2325</th></tr></thead>
+    <tbody>
+      <tr><td class="metric">Throughput (bps)<span class="metric-note">Data Transfer</span></td><td class="val-today">2.12e13</td><td class="val-25">2.46e17</td><td class="val-50">2.13e19</td><td class="val-100">1.19e27</td><td class="val-300">1e36+</td></tr>
+      <tr><td class="metric">Latency (ns)<span class="metric-note">Local Response</span></td><td class="val-today">25</td><td class="val-25">2.5</td><td class="val-50">0.25</td><td class="val-100">0.02</td><td class="val-300">&lt;1 fs (Timeless)</td></tr>
+      <tr><td class="metric">Global Latency (ns)<span class="metric-note">End-to-End</span></td><td class="val-today">25 (local)</td><td class="val-25">10-50</td><td class="val-50">1-10</td><td class="val-100">&lt;1</td><td class="val-300">0 (Instant)</td></tr>
+      <tr><td class="metric">Bandwidth (Ebps)<span class="metric-note">Exabits/sec Capacity</span></td><td class="val-today">0.0000212</td><td class="val-25">1-10</td><td class="val-50">100-1000</td><td class="val-100">1e6</td><td class="val-300">&infin; (capped)</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- Infrastructure -->
+<div class="section section-wide reveal">
+  <h2>Infrastructure Scale</h2>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Metric</th><th>2025</th><th>2050</th><th>2075</th><th>2125</th><th>2325</th></tr></thead>
+    <tbody>
+      <tr><td class="metric">HMSS Units<span class="metric-note">Network Nodes</span></td><td class="val-today">1</td><td class="val-25">100-1e4</td><td class="val-50">1e4-1e6</td><td class="val-100">1e9-1e12</td><td class="val-300">1e15+ (Galactic)</td></tr>
+      <tr><td class="metric">Cores Used/Available<span class="metric-note">Processing Units</span></td><td class="val-today">12/125 (95%)</td><td class="val-25">4.3e6 (92%)</td><td class="val-50">9.5e9 (90%)</td><td class="val-100">4.9e14 (95%)</td><td class="val-300">1e20+ (100%)</td></tr>
+      <tr><td class="metric">Geometric Units Stored<span class="metric-note">Total Capacity</span></td><td class="val-today">1e8 (5e6 active)</td><td class="val-25">1e12 (1.5e11 active)</td><td class="val-50">1e15 (2.7e14 active)</td><td class="val-100">1e21 (4.2e20 active)</td><td class="val-300">1e30+ (1e69 cap)</td></tr>
+      <tr><td class="metric">Active Utilization %<span class="metric-note">In-Use Ratio</span></td><td class="val-today">5%</td><td class="val-25">15%</td><td class="val-50">18%</td><td class="val-100">20%</td><td class="val-300">20% (Optimal)</td></tr>
+      <tr><td class="metric">Adoption Rate %<span class="metric-note">Global Penetration</span></td><td class="val-today">0 (prototype)</td><td class="val-25">1-5%</td><td class="val-50">20-50%</td><td class="val-100">90%</td><td class="val-300">100% (Universal)</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- Energy -->
+<div class="section section-wide reveal">
+  <h2>Energy &amp; Sustainability</h2>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Metric</th><th>2025</th><th>2050</th><th>2075</th><th>2125</th><th>2325</th></tr></thead>
+    <tbody>
+      <tr><td class="metric">Power (kW per unit)<span class="metric-note">Energy Draw</span></td><td class="val-today">3</td><td class="val-25">100</td><td class="val-50">800</td><td class="val-100">8e3</td><td class="val-300">1e6 (Zero-waste)</td></tr>
+      <tr><td class="metric">Energy Efficiency (ops/J)<span class="metric-note">Operations/Joule</span></td><td class="val-today">1.12e11</td><td class="val-25">5.0e14</td><td class="val-50">3.76e18</td><td class="val-100">1.25e26</td><td class="val-300">1e35+ (Landauer)</td></tr>
+      <tr><td class="metric">Carbon (g CO&#8322;/kWh)<span class="metric-note">Emissions</span></td><td class="val-today">400</td><td class="val-25">50</td><td class="val-50">5</td><td class="val-100">0.5</td><td class="val-300">0 (Perfect)</td></tr>
+      <tr><td class="metric">Environmental Impact<span class="metric-note">kg CO&#8322;/PFLOPS</span></td><td class="val-today">0.0001</td><td class="val-25">0.00001</td><td class="val-50">1e-6</td><td class="val-100">0</td><td class="val-300">0 (Harmonious)</td></tr>
+      <tr><td class="metric">Cost ($/PFLOPS)<span class="metric-note">Economics</span></td><td class="val-today">6.67e6</td><td class="val-25">1e5</td><td class="val-50">10</td><td class="val-100">&lt;1</td><td class="val-300">0 (Ubiquitous)</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- Quality -->
+<div class="section section-wide reveal">
+  <h2>Quality, Security &amp; Reliability</h2>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Metric</th><th>2025</th><th>2050</th><th>2075</th><th>2125</th><th>2325</th></tr></thead>
+    <tbody>
+      <tr><td class="metric">Reliability %<span class="metric-note">System Uptime</span></td><td class="val-today">99.999%</td><td class="val-25">99.9999%</td><td class="val-50">99.99999%</td><td class="val-100">99.999999%</td><td class="val-300">100% (Eternal)</td></tr>
+      <tr><td class="metric">Compression Ratio<span class="metric-note">Data Packing</span></td><td class="val-today">20&times;</td><td class="val-25">30&times;</td><td class="val-50">40&times;</td><td class="val-100">50&times;</td><td class="val-300">100&times;+ (Shannon)</td></tr>
+      <tr><td class="metric">Decoherence (ms)<span class="metric-note">Quantum Stability</span></td><td class="val-today">0.1 (lab)</td><td class="val-25">10</td><td class="val-50">100</td><td class="val-100">1,000 (1s)</td><td class="val-300">&infin; (Absolute)</td></tr>
+      <tr><td class="metric">Security (Gbps QKD)<span class="metric-note">Key Distribution</span></td><td class="val-today">0.1</td><td class="val-25">1-10</td><td class="val-50">100-1000</td><td class="val-100">1e6</td><td class="val-300">&infin; (Absolute)</td></tr>
+      <tr><td class="metric">Fault Tolerance (MTBF hrs)<span class="metric-note">Mean Time Between Failures</span></td><td class="val-today">1e5</td><td class="val-25">1e6</td><td class="val-50">1e7</td><td class="val-100">&infin;</td><td class="val-300">&infin; (Eternal)</td></tr>
+      <tr><td class="metric">Interoperability %<span class="metric-note">Legacy Compat</span></td><td class="val-today">50%</td><td class="val-25">80%</td><td class="val-50">95%</td><td class="val-100">100%</td><td class="val-300">100% (Seamless)</td></tr>
+      <tr><td class="metric">Scalability (&times;/decade)<span class="metric-note">Growth Factor</span></td><td class="val-today">10&times;</td><td class="val-25">20&times;</td><td class="val-50">50&times;</td><td class="val-100">100&times;</td><td class="val-300">&infin; (capped)</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- Physics Limits -->
+<div class="section section-wide reveal">
+  <h2>Fundamental Physics Limits</h2>
+  <p class="section-desc">Ultimate theoretical boundaries imposed by the laws of physics. These represent the absolute ceiling regardless of technological advancement.</p>
+  <div class="physics-box">
+    <div class="physics-title">Universal Constants &amp; Caps</div>
+    <div class="physics-grid">
+      <div class="physics-item"><div class="name">Bekenstein Bound</div><div class="value">~1e69 bits</div><div class="desc">Maximum information in observable universe</div></div>
+      <div class="physics-item"><div class="name">Cosmic FLOPS Cap</div><div class="value">~1e55</div><div class="desc">Universe-scale compute limit</div></div>
+      <div class="physics-item"><div class="name">Landauer Limit</div><div class="value">~10&#8315;&#178;&#185; J/bit</div><div class="desc">Minimum energy per bit erasure</div></div>
+      <div class="physics-item"><div class="name">Planck Time</div><div class="value">~5.4e-44 s</div><div class="desc">Smallest meaningful time unit</div></div>
+      <div class="physics-item"><div class="name">Universe Energy</div><div class="value">~10&#8309;&#178; J</div><div class="desc">Total available cosmic energy</div></div>
+      <div class="physics-item"><div class="name">Shannon Limit</div><div class="value">Theoretical Max</div><div class="desc">Maximum lossless compression bound</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="section section-wide reveal">
+  <h2>Growth Trajectory Visualizations</h2>
+  <div class="chart-grid">
+    <div class="chart-container"><canvas id="flopsChart"></canvas></div>
+    <div class="chart-container"><canvas id="networkChart"></canvas></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-container"><canvas id="latencyChart"></canvas></div>
+    <div class="chart-container"><canvas id="efficiencyChart"></canvas></div>
+  </div>
+</div>
+
+<!-- 300-Year Summary -->
+<div class="section section-wide reveal">
+  <h2>300-Year Theoretical Maximum Gains</h2>
+  <div class="summary-grid">
+    <div class="summary-card"><div class="summary-icon">&#9889;</div><div class="summary-value">10&#8308;&#8304;&times;</div><div class="summary-label">FLOPS Growth</div><div class="summary-sub">PFLOPS &rarr; Universe Cap</div></div>
+    <div class="summary-card"><div class="summary-icon">&#128225;</div><div class="summary-value">10&#178;&#179;&times;</div><div class="summary-label">Throughput</div><div class="summary-sub">Tbps &rarr; &infin;</div></div>
+    <div class="summary-card"><div class="summary-icon">&#127950;</div><div class="summary-value">&rarr;0</div><div class="summary-label">Latency</div><div class="summary-sub">25ns &rarr; Instant</div></div>
+    <div class="summary-card"><div class="summary-icon">&#128267;</div><div class="summary-value">10&#178;&#8308;&times;</div><div class="summary-label">Efficiency</div><div class="summary-sub">&rarr; Landauer Limit</div></div>
+    <div class="summary-card"><div class="summary-icon">&#127793;</div><div class="summary-value">&rarr;0</div><div class="summary-label">Carbon</div><div class="summary-sub">Perfect Sustainability</div></div>
+    <div class="summary-card"><div class="summary-icon">&#128279;</div><div class="summary-value">10&#185;&#8309;&times;</div><div class="summary-label">Network Scale</div><div class="summary-sub">1 &rarr; Galactic</div></div>
+    <div class="summary-card"><div class="summary-icon">&#128190;</div><div class="summary-value">5&times;</div><div class="summary-label">Compression</div><div class="summary-sub">20&times; &rarr; Shannon Cap</div></div>
+    <div class="summary-card"><div class="summary-icon">&#9989;</div><div class="summary-value">100%</div><div class="summary-label">Reliability</div><div class="summary-sub">Eternal Uptime</div></div>
+  </div>
+</div>
+
+<!-- Disclaimer -->
+<div class="disclaimer reveal">
+  <strong>&#9888; Theoretical Projections Disclaimer:</strong><br><br>
+  These metrics represent <em>realistic attainable theoretical maximum limits</em> derived from verifiable
+  trends in supercomputing (~100&times;/decade), DOE exascale targets, photonic efficiencies, quantum repeater
+  advances, and fundamental physics bounds (Bekenstein, Landauer). Attainability percentages decrease with
+  time horizon due to compounding uncertainties. 2025 metrics are prototype-realistic ($35K hardware).
+  2325 projections approach fundamental physics limits and are highly speculative. These projections
+  are provided for visionary planning purposes only. QUAD's vision inspires infinite progress, but
+  practical implementation requires ongoing R&amp;D breakthroughs.
+</div>
+
+<hr class="divider">
+
+<footer>
+  <p>Metaphysics &amp; Computing &mdash; <a href="https://metaphysicsandcomputing.com">MetaphysicsandComputing.com</a> &bull; <a href="mailto:Logan@MetaphysicsandComputing.com">Logan@MetaphysicsandComputing.com</a></p>
+  <p style="margin-top:1rem;">&copy; 2025 Metaphy LLC. All rights reserved.</p>
+</footer>
+
+<div class="audio-toggle" id="audioToggle">
+  <div class="audio-bars" id="audioBars"><span></span><span></span><span></span><span></span></div>
+  <span class="audio-label">Ambient</span>
+</div>
+
+<script>
+/* Password Gate */
+const PASSWORD_HASH='4e16d9ed0887a757d2641b6c93e1a2de4c2192aa445f6cb6d06958f44ebff3fe';
+const AUTH_KEY='metaphy_proprietary_auth';const AUTH_DURATION=24*60*60*1000;
+const gateOverlay=document.getElementById('gateOverlay'),gateInput=document.getElementById('gateInput'),gateBtn=document.getElementById('gateBtn'),gateError=document.getElementById('gateError');
+function checkStoredAuth(){const s=localStorage.getItem(AUTH_KEY);if(s){const{timestamp}=JSON.parse(s);if(Date.now()-timestamp<AUTH_DURATION){gateOverlay.classList.add('hidden');return true;}localStorage.removeItem(AUTH_KEY);}return false;}
+async function hashPassword(p){const e=new TextEncoder(),d=e.encode(p),h=await crypto.subtle.digest('SHA-256',d),a=Array.from(new Uint8Array(h));return a.map(b=>b.toString(16).padStart(2,'0')).join('');}
+async function attemptLogin(){const p=gateInput.value;if(!p)return;const h=await hashPassword(p);if(h===PASSWORD_HASH){localStorage.setItem(AUTH_KEY,JSON.stringify({timestamp:Date.now()}));gateOverlay.classList.add('hidden');}else{gateError.textContent='Access denied. Incorrect password.';gateInput.classList.add('shake');setTimeout(()=>gateInput.classList.remove('shake'),500);gateInput.value='';gateInput.focus();}}
+gateBtn.addEventListener('click',attemptLogin);gateInput.addEventListener('keydown',e=>{if(e.key==='Enter')attemptLogin();});
+if(!checkStoredAuth()){gateInput.focus();}
+
+/* Particles */
+(function(){const c=document.getElementById('particles-canvas'),ctx=c.getContext('2d');let w,h,particles=[],mouse={x:null,y:null};function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight;}window.addEventListener('resize',resize);resize();for(let i=0;i<90;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-0.5)*0.4,vy:(Math.random()-0.5)*0.4,r:Math.random()*2+1});window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});window.addEventListener('mouseleave',()=>{mouse.x=null;mouse.y=null;});function draw(){ctx.clearRect(0,0,w,h);particles.forEach((p,i)=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(61,140,140,0.35)';ctx.fill();for(let j=i+1;j<particles.length;j++){const dx=p.x-particles[j].x,dy=p.y-particles[j].y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<160){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle=`rgba(61,140,140,${0.12*(1-dist/160)})`;ctx.stroke();}}if(mouse.x!==null){const dx=p.x-mouse.x,dy=p.y-mouse.y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<160){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(mouse.x,mouse.y);ctx.strokeStyle=`rgba(201,168,76,${0.18*(1-dist/160)})`;ctx.stroke();}}});requestAnimationFrame(draw);}draw();})();
+
+/* Nav */
+(function(){const nav=document.getElementById('topNav'),bar=document.getElementById('progressBar');let lastY=0;window.addEventListener('scroll',()=>{const y=window.scrollY;nav.classList.toggle('hidden',y>lastY&&y>120);lastY=y;const max=document.documentElement.scrollHeight-window.innerHeight;bar.style.width=(max>0?(y/max)*100:0)+'%';},{passive:true});})();
+document.getElementById('hamburgerBtn').addEventListener('click',()=>{document.getElementById('mobileMenu').classList.toggle('open');});
+
+/* Hero Fallback */
+(function(){const v=document.querySelector('.hero-video'),fb=document.querySelector('.hero-fallback');if(v){v.addEventListener('error',()=>{v.style.display='none';if(fb)fb.style.display='block';});}})();
+
+/* Scroll Reveal */
+(function(){const els=document.querySelectorAll('.reveal');const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});},{threshold:0.1});els.forEach(el=>obs.observe(el));})();
+
+/* Charts */
+Chart.defaults.color='#94A3B8';Chart.defaults.borderColor='rgba(255,255,255,0.06)';Chart.defaults.font.family="'Inter', sans-serif";
+const years=['2025','2050','2075','2125','2325'];
+const eraColors=['#3D8C8C','#06b6d4','#a855f7','#ff6b35','#C9A84C'];
+
+new Chart(document.getElementById('flopsChart'),{type:'bar',data:{labels:years,datasets:[{label:'Network FLOPS (log\u2081\u2080)',data:[15.7,20.8,27.7,41.5,55],backgroundColor:eraColors,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Total Network Compute (FLOPS)',font:{size:14,weight:'bold'},color:'#C9A84C'}},scales:{y:{title:{display:true,text:'log\u2081\u2080(FLOPS)'},min:0,max:60}}}});
+
+new Chart(document.getElementById('networkChart'),{type:'bar',data:{labels:years,datasets:[{label:'HMSS Units (log\u2081\u2080)',data:[0,3,5,11,15],backgroundColor:eraColors,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Network Scale (HMSS Units)',font:{size:14,weight:'bold'},color:'#C9A84C'}},scales:{y:{title:{display:true,text:'log\u2081\u2080(Units)'},min:0,max:18}}}});
+
+new Chart(document.getElementById('latencyChart'),{type:'line',data:{labels:years,datasets:[{label:'Latency (ns)',data:[25,2.5,0.25,0.02,0.001],borderColor:'#3D8C8C',backgroundColor:'rgba(61,140,140,0.1)',fill:true,tension:0.4,pointRadius:8,pointBackgroundColor:eraColors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Latency Reduction',font:{size:14,weight:'bold'},color:'#C9A84C'}},scales:{y:{type:'logarithmic',title:{display:true,text:'Nanoseconds'}}}}});
+
+new Chart(document.getElementById('efficiencyChart'),{type:'bar',data:{labels:years,datasets:[{label:'Efficiency (log\u2081\u2080 ops/J)',data:[11,14.7,18.6,26.1,35],backgroundColor:eraColors,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Energy Efficiency (ops/Joule)',font:{size:14,weight:'bold'},color:'#C9A84C'}},scales:{y:{title:{display:true,text:'log\u2081\u2080(ops/J)'},min:0,max:40}}}});
+
+/* Audio */
+let audioCtx,gainNode,audioPlaying=false;
+const audioToggle=document.getElementById('audioToggle'),audioBars=document.getElementById('audioBars');
+audioToggle.addEventListener('click',()=>{if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)();gainNode=audioCtx.createGain();gainNode.gain.value=0;const lfo=audioCtx.createOscillator();lfo.frequency.value=0.08;const lfoGain=audioCtx.createGain();lfoGain.gain.value=3;lfo.connect(lfoGain);lfo.start();const filter=audioCtx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=500;filter.Q.value=1;lfoGain.connect(filter.frequency);[220,261.63,329.63,440].forEach(f=>{const osc=audioCtx.createOscillator();osc.type='sine';osc.frequency.value=f*0.5;osc.connect(filter);osc.start();});filter.connect(gainNode);gainNode.connect(audioCtx.destination);}if(!audioPlaying){audioCtx.resume();gainNode.gain.linearRampToValueAtTime(0.018,audioCtx.currentTime+2);audioBars.classList.add('playing');audioPlaying=true;}else{gainNode.gain.linearRampToValueAtTime(0,audioCtx.currentTime+1);audioBars.classList.remove('playing');audioPlaying=false;}});
+
+/* Auto-Hide Scrollbar */
+(function(){const html=document.documentElement;let scrollTimer=null;const FADE_DELAY=1500;function showScrollbar(){html.classList.add('scrollbar-visible');clearTimeout(scrollTimer);scrollTimer=setTimeout(()=>{html.classList.remove('scrollbar-visible');},FADE_DELAY);}window.addEventListener('scroll',showScrollbar,{passive:true});window.addEventListener('keydown',function(e){if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End','Space'].includes(e.key)){showScrollbar();}});const hoverZone=document.createElement('div');hoverZone.className='scrollbar-hover-zone';document.body.appendChild(hoverZone);hoverZone.addEventListener('mouseenter',function(){html.classList.add('scrollbar-visible');clearTimeout(scrollTimer);});hoverZone.addEventListener('mouseleave',function(){scrollTimer=setTimeout(()=>{html.classList.remove('scrollbar-visible');},FADE_DELAY);});window.addEventListener('touchstart',showScrollbar,{passive:true});})();
+</script>
+</body>
+</html>
