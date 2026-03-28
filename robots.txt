@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /proprietary/
+
+Sitemap: https://www.metaphysicsandcomputing.com/sitemap.xml
