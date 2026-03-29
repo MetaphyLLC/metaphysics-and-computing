@@ -17,7 +17,7 @@ const { applySecurityMiddleware, apiRateLimiter, validateChatInput } = require('
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'https://www.metaphysicsandcomputing.com';
 const DEEPINFRA_API_KEY = process.env.DEEPINFRA_API_KEY;
-const LLM_MODEL = process.env.LLM_MODEL || 'Qwen/Qwen3.5-A17B';
+const LLM_MODEL = process.env.LLM_MODEL || 'Qwen/Qwen3.5-397B-A17B';
 const TTS_VOICE = process.env.TTS_VOICE || 'aura-asteria-en';
 
 if (!DEEPINFRA_API_KEY) {

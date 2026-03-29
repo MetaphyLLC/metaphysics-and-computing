@@ -7,6 +7,33 @@ const SENTENCE_BOUNDARY = /^(.*?[.!?])\s+(.*)/s;
 const MIN_SENTENCE_CHARS = 8;
 
 /**
+ * Normalize text before sending to TTS.
+ * Expands brand acronyms so the TTS engine pronounces them correctly
+ * and strips markdown/special characters that would be read aloud.
+ * @param {string} text
+ * @returns {string}
+ */
+function normalizeTtsText(text) {
+  return text
+    // Brand acronym expansion for natural TTS pronunciation
+    .replace(/\bQEGG\b/g, 'Q. E. G. G.')
+    .replace(/\bDRGFC\b/g, 'D. R. G. F. C.')
+    .replace(/\bHMSS\b/g, 'H. M. S. S.')
+    .replace(/\bBCPS\b/g, 'B. C. P. S.')
+    .replace(/\bQUAD\b/g, 'Q. U. A. D.')
+    .replace(/\bLWIS\b/g, 'L. W. I. S.')
+    .replace(/\bSPTS\b/g, 'S. P. T. S.')
+    .replace(/\bUAIMC\b/g, 'U. A. I. M. C.')
+    // Strip markdown that TTS would read aloud
+    .replace(/\*\*([^*]+)\*\*/g, '$1')   // **bold**
+    .replace(/\*([^*]+)\*/g, '$1')       // *italic*
+    .replace(/`([^`]+)`/g, '$1')         // `code`
+    .replace(/—/g, ', ')                 // em-dash → pause
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Sentence-buffered streaming pipeline.
  * Consumes an LLM stream, detects sentence boundaries,
  * calls TTS on each sentence, and yields NDJSON events.
@@ -43,12 +70,12 @@ async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'aura-aster
       // Yield text immediately — client renders text before audio arrives
       yield { type: 'text', content: sentence };
 
-      // Generate TTS for this sentence
+      // Generate TTS for this sentence (normalize before sending)
       try {
         const audio = await ttsClient.audio.speech.create({
           model: 'openai/tts-1',
           voice,
-          input: sentence,
+          input: normalizeTtsText(sentence),
           response_format: 'mp3'
         });
         const audioBuffer = Buffer.from(await audio.arrayBuffer());
@@ -69,7 +96,7 @@ async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'aura-aster
       const audio = await ttsClient.audio.speech.create({
         model: 'openai/tts-1',
         voice,
-        input: remaining,
+        input: normalizeTtsText(remaining),
         response_format: 'mp3'
       });
       const audioBuffer = Buffer.from(await audio.arrayBuffer());
@@ -95,4 +122,4 @@ function writeNdjsonEvent(res, event) {
   res.write(JSON.stringify(event) + '\n');
 }
 
-module.exports = { sentenceBufferedStream, writeNdjsonEvent };
+module.exports = { sentenceBufferedStream, writeNdjsonEvent, normalizeTtsText };
