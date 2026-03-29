@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -97,7 +97,41 @@ body {
     background: linear-gradient(90deg, var(--teal), var(--gold));
     width:0; transition: width .15s linear;
   }
-  @media (max-width:768px) { .nav-links { display:none; } }
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px; height: 18px;
+    background: none; border: none;
+    cursor: pointer; padding: 0;
+  }
+  .hamburger span {
+    display: block; height: 2px;
+    background: var(--text-dim); border-radius: 2px;
+    transition: background .25s;
+  }
+  .hamburger:hover span { background: var(--teal); }
+  .mobile-menu {
+    display: none; flex-direction: column;
+    position: fixed; top: 56px; left: 0; right: 0;
+    background: rgba(10,14,23,0.97);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem; gap: 0; z-index: 99;
+  }
+  .mobile-menu a {
+    color: var(--text-dim); text-decoration: none;
+    font-size: .85rem; letter-spacing: .06em;
+    text-transform: uppercase; padding: .75rem 0;
+    border-bottom: 1px solid rgba(61,140,140,0.1);
+    transition: color .25s;
+  }
+  .mobile-menu a:last-child { border-bottom: none; }
+  .mobile-menu a:hover, .mobile-menu a.active { color: var(--teal); }
+  .mobile-menu.open { display: flex; }
+  @media (max-width:768px) {
+    .nav-links { display:none; }
+    .hamburger { display:flex; }
+  }
 
   /* HERO */
   .hero {
@@ -738,8 +772,20 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
     <li><a href="#sec7">Gauntlet</a></li>
     <li><a href="#sec10">Roadmap</a></li>
   </ul>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Open navigation">
+    <span></span><span></span><span></span>
+  </button>
   <div class="progress-bar" id="progressBar"></div>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#sec1">Prior Art</a>
+  <a href="#sec2">Novelty</a>
+  <a href="#sec3">Safety</a>
+  <a href="#sec4">Architecture</a>
+  <a href="#sec5">Transit</a>
+  <a href="#sec7">Gauntlet</a>
+  <a href="#sec10">Roadmap</a>
+</div>
 
 <!-- HERO -->
 <header class="hero">
@@ -1198,13 +1244,7 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
     </a>
   </div>
 
-<!-- AUDIO TOGGLE -->  
-  <div class="audio-bars" id="audioBars">
-    <span style="height:4px"></span>
-    <span style="height:4px"></span>
-    <span style="height:4px"></span>
-    <span style="height:4px"></span>
-  </div>
+
 </div>
 
 <script>
@@ -1302,6 +1342,11 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
     });
   }, { threshold: 0.12 });
   reveals.forEach(el => observer.observe(el));
+
+  /* ── HAMBURGER MENU ── */
+  const hamburger = document.getElementById('hamburgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger.addEventListener('click', () => { mobileMenu.classList.toggle('open'); });
 
   /* ── AMBIENT AUDIO ── */
   let audioCtx, audioPlaying = false, gainNode, oscNodes = [];
