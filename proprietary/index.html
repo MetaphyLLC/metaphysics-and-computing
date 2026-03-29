@@ -941,8 +941,8 @@ reveals.forEach(el => observer.observe(el));
 class Oracle {
   constructor(config = {}) {
     this.config = {
-      restUrl: config.restUrl || 'https://oracle.metaphy.ai/api/chat',
-      healthUrl: config.healthUrl || 'https://oracle.metaphy.ai/api/health',
+      restUrl: config.restUrl || 'https://metaphysics-and-computing-production.up.railway.app/api/chat',
+      healthUrl: config.healthUrl || 'https://metaphysics-and-computing-production.up.railway.app/api/health',
       wsUrl: config.wsUrl || null,
       maxMessageLength: 500,
       sessionTimeout: 30 * 60 * 1000,
@@ -1588,9 +1588,9 @@ class Oracle {
 /* ─── AUTO-INITIALIZE ─── */
 document.addEventListener('DOMContentLoaded', () => {
   window.oracle = new Oracle({
-    restUrl: 'https://oracle.metaphy.ai/api/chat',
-    healthUrl: 'https://oracle.metaphy.ai/api/health',
-    enableMockMode: true
+    restUrl: 'https://metaphysics-and-computing-production.up.railway.app/api/chat',
+    healthUrl: 'https://metaphysics-and-computing-production.up.railway.app/api/health',
+    enableMockMode: false
   });
   window.oracle.render();
 });
