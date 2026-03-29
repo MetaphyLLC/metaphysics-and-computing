@@ -98,7 +98,15 @@
     background: linear-gradient(90deg, var(--teal), var(--gold));
     width:0; transition: width .15s linear;
   }
-  @media (max-width:768px) { .nav-links { display:none; } }
+  .hamburger { display:none; background:none; border:none; cursor:pointer; padding:0.5rem; }
+  .hamburger svg { width:22px; height:22px; stroke:var(--text-dim); transition: stroke .25s; }
+  .hamburger:hover svg { stroke: var(--teal); }
+  .mobile-menu { display:none; position:fixed; top:56px; left:0; right:0; background:rgba(10,14,23,0.95); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); padding:1rem 2rem; z-index:99; }
+  .mobile-menu.open { display:block; }
+  .mobile-menu a { display:block; padding:0.7rem 0; color:var(--text-dim); text-decoration:none; font-size:.85rem; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.04); transition:color .25s; }
+  .mobile-menu a:last-child { border-bottom:none; }
+  .mobile-menu a:hover, .mobile-menu a.active { color:var(--teal); }
+  @media (max-width:768px) { .nav-links { display:none; } .hamburger { display:block; } }
 
   /* ══ HERO ══ */
   .hero {
@@ -814,8 +822,23 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
     <li><a href="/services/">Services</a></li>
     <li><a href="/projects/">Projects</a></li>
   </ul>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <div class="progress-bar" id="progressBar"></div>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/">Home</a>
+  <a href="/about-us/">About Us</a>
+  <a href="/mission-statement/">Mission Statement</a>
+  <a href="/core-beliefs/" class="active">Core Beliefs</a>
+  <a href="/services/">Services</a>
+  <a href="/projects/">Projects</a>
+  <a href="/nda/">NDA</a>
+  <a href="/tachymetric-manifesto/">Tachymetric Manifesto</a>
+  <a href="/architecture-of-harmony/">Architecture of Harmony</a>
+  <a href="/cryptography-of-being/">Cryptography of Being</a>
+</div>
 
 <!-- HERO -->
 <header class="hero">
@@ -1176,6 +1199,11 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
     const pct = curr / (document.documentElement.scrollHeight - window.innerHeight) * 100;
     prog.style.width = pct + '%';
   });
+
+  /* ── MOBILE MENU ── */
+  const hamburger = document.getElementById('hamburgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger.addEventListener('click', () => { mobileMenu.classList.toggle('open'); });
 
   /* ── SCROLL REVEAL ── */
   const reveals = document.querySelectorAll('.reveal');
