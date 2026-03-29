@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -96,8 +96,40 @@
     width:0; transition: width .15s linear;
   }
 
+  .hamburger {
+    display: none; flex-direction: column; justify-content: space-between;
+    width: 24px; height: 18px; background: none; border: none;
+    cursor: pointer; padding: 0;
+  }
+  .hamburger span {
+    display: block; height: 2px;
+    background: var(--text-dim); border-radius: 2px; transition: background .25s;
+  }
+  .hamburger:hover span { background: var(--teal); }
+  .mobile-menu {
+    display: none; flex-direction: column;
+    position: fixed; top: 56px; left: 0; right: 0;
+    background: rgba(10,14,23,0.97); border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem; gap: 0; z-index: 99;
+  }
+  .mobile-menu a {
+    color: var(--text-dim); text-decoration: none;
+    font-size: .85rem; letter-spacing: .06em; text-transform: uppercase;
+    padding: .75rem 0; border-bottom: 1px solid rgba(61,140,140,0.1); transition: color .25s;
+  }
+  .mobile-menu a:last-child { border-bottom: none; }
+  .mobile-menu a:hover, .mobile-menu a.active { color: var(--teal); }
+  .mobile-menu.open { display: flex; }
+  .site-footer {
+    position: relative; z-index: 1; text-align: center;
+    padding: 2rem; border-top: 1px solid var(--border);
+    font-family: var(--sans); font-size: .75rem; color: var(--text-dim);
+  }
+  .site-footer a { color: var(--teal); text-decoration: none; }
+  .site-footer a:hover { text-decoration: underline; }
   @media (max-width:768px) {
     .nav-links { display:none; }
+    .hamburger { display:flex; }
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -780,8 +812,23 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
     <li><a href="#s6">7-Layer</a></li>
     <li><a href="#s7">Flaws</a></li>
   </ul>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Open navigation">
+    <span></span><span></span><span></span>
+  </button>
   <div class="progress-bar" id="progressBar"></div>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/">Home</a>
+  <a href="/about-us/">About Us</a>
+  <a href="/mission-statement/">Mission Statement</a>
+  <a href="/core-beliefs/">Core Beliefs</a>
+  <a href="/services/">Services</a>
+  <a href="/projects/">Projects</a>
+  <a href="/nda/">NDA</a>
+  <a href="/tachymetric-manifesto/">Tachymetric Manifesto</a>
+  <a href="/architecture-of-harmony/" class="active">Architecture of Harmony</a>
+  <a href="/cryptography-of-being/">Cryptography of Being</a>
+</div>
 
 <!-- ═══════════════════════════════════════════════════════════
      HERO
@@ -1117,12 +1164,14 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
 <!-- ═══════════════════════════════════════════════════════════
      CLOSING
      ═══════════════════════════════════════════════════════════ -->
-<footer class="closing reveal">
+<div class="closing reveal">
   <div class="closing-rule"></div>
   <p class="closing-line">In the silence between clock cycles, the soul persists.</p>
   <p class="closing-line">In the gradient of hindsight, wisdom is reborn.</p>
   <p class="closing-line">In the resistance-less flow, the architect finds rest.</p>
   <p class="closing-tagline">Built with 169 currents, 26,200 lines of truth, and one eternal plan.</p>
+</div>
+<footer class="site-footer">
   <div class="footer-nav">
     <div class="footer-col">
       <h4>Company</h4>
@@ -1145,6 +1194,8 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
       <a href="/cryptography-of-being/">Cryptography of Being</a>
     </div>
   </div>
+  <p>Copyright &copy; 2026 Metaphysics and Computing, a Metaphy LLC website.</p>
+  <p style="margin-top:0.5rem;"><a href="https://www.x.com/MetaphyKing">@MetaphyKing</a> &middot; <a href="mailto:Logan@MetaphysicsandComputing.com">Logan@MetaphysicsandComputing.com</a></p>
 </footer>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -1243,6 +1294,11 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(61,140,140
     });
   }, { threshold:.12 });
   reveals.forEach(el=> revealObserver.observe(el));
+
+  /* ── HAMBURGER MENU ── */
+  const hamburger = document.getElementById('hamburgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger.addEventListener('click', () => { mobileMenu.classList.toggle('open'); });
 
   /* ── Progress Bar ────────────────────────────────────────── */
   const progressBar = document.getElementById('progressBar');
