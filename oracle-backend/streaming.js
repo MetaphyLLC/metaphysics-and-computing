@@ -35,10 +35,7 @@ function normalizeTtsText(text) {
 
 /**
  * Strip Qwen3.5 chain-of-thought thinking blocks from a text buffer.
- * Thinking arrives as <think>...</think> in the stream. We discard it entirely —
- * visitors should never see or hear the model's internal reasoning.
- * Handles partial blocks (thinking tag split across chunks) by holding the
- * buffer until the closing tag arrives.
+ * Exported for unit testing; the main streaming loop uses stateful detection instead.
  * @param {string} buffer - Current accumulation buffer
  * @returns {{ clean: string, inThinking: boolean }}
  */
@@ -48,7 +45,6 @@ function stripThinkingFromBuffer(buffer) {
   // Detect if we're inside an open thinking block (no closing tag yet)
   const openIdx = cleaned.lastIndexOf('<think>');
   if (openIdx !== -1) {
-    // Hold everything from <think> onward — don't emit it yet
     return { clean: cleaned.slice(0, openIdx).trim(), inThinking: true };
   }
   return { clean: cleaned, inThinking: false };
@@ -58,6 +54,10 @@ function stripThinkingFromBuffer(buffer) {
  * Sentence-buffered streaming pipeline.
  * Consumes an LLM stream, detects sentence boundaries,
  * calls TTS on each sentence, and yields NDJSON events.
+ *
+ * Uses stateful thinking-block detection: content inside <think>...</think>
+ * is discarded in real time as chunks arrive, so the sentence buffer only
+ * ever sees clean response text.
  *
  * Yields objects:
  *   { type: 'text',  content: string }
@@ -70,27 +70,54 @@ function stripThinkingFromBuffer(buffer) {
  * @param {string} ttsModel - TTS model name (default: 'kokoro')
  */
 async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'af_bella', ttsModel = 'kokoro') {
-  let buffer = '';
+  let outputBuffer = '';  // Accumulated clean text, ready for sentence detection
+  let inThinking = false; // Whether we're currently inside a <think> block
 
   for await (const chunk of llmStream) {
-    const content = chunk.choices[0]?.delta?.content || '';
-    if (!content) continue;
-    buffer += content;
+    const rawContent = chunk.choices[0]?.delta?.content || '';
+    if (!rawContent) continue;
 
-    // Strip Qwen thinking blocks before sentence detection
-    const { clean, inThinking } = stripThinkingFromBuffer(buffer);
-    if (inThinking) continue;  // Wait for closing </think> tag
-    buffer = clean;
+    // Route content: thinking goes to /dev/null, everything else to outputBuffer.
+    // We process the chunk string-segment by segment so <think> blocks that span
+    // multiple chunks are handled correctly regardless of where the tags land.
+    let remaining = rawContent;
+    while (remaining.length > 0) {
+      if (inThinking) {
+        const closeIdx = remaining.indexOf('</think>');
+        if (closeIdx === -1) {
+          // Entire remaining is inside the thinking block — discard it
+          remaining = '';
+        } else {
+          // Thinking block closes in this chunk; skip past the tag
+          remaining = remaining.slice(closeIdx + '</think>'.length);
+          inThinking = false;
+        }
+      } else {
+        const openIdx = remaining.indexOf('<think>');
+        if (openIdx === -1) {
+          // No thinking tag — all clean output
+          outputBuffer += remaining;
+          remaining = '';
+        } else {
+          // Thinking block opens in this chunk; take everything before the tag
+          outputBuffer += remaining.slice(0, openIdx);
+          remaining = remaining.slice(openIdx + '<think>'.length);
+          inThinking = true;
+        }
+      }
+    }
 
-    // Attempt to extract complete sentences from the buffer
+    if (inThinking) continue; // Don't attempt sentence detection mid-think
+
+    // Attempt to extract complete sentences from the output buffer
     let match;
-    while ((match = SENTENCE_BOUNDARY.exec(buffer)) !== null) {
+    while ((match = SENTENCE_BOUNDARY.exec(outputBuffer)) !== null) {
       const sentence = match[1].trim();
-      buffer = match[2];
+      outputBuffer = match[2];
 
       if (sentence.length < MIN_SENTENCE_CHARS) {
         // Too short for TTS — prepend back to buffer for next sentence
-        buffer = sentence + ' ' + buffer;
+        outputBuffer = sentence + ' ' + outputBuffer;
         break;
       }
 
@@ -116,8 +143,8 @@ async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'af_bella',
     }
   }
 
-  // Flush remaining buffer after LLM stream ends
-  const remaining = buffer.trim();
+  // Flush remaining output buffer after LLM stream ends
+  const remaining = outputBuffer.trim();
   if (remaining.length >= MIN_SENTENCE_CHARS) {
     yield { type: 'text', content: remaining };
     if (ttsClient) {
