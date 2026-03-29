@@ -41,6 +41,58 @@ const ttsClient = TTS_BASE_URL ? new OpenAI({
   baseURL: TTS_BASE_URL
 }) : null;
 
+// ─── DeepInfra Streaming Helper ──────────────────────────────────────────────
+// Uses raw fetch instead of the OpenAI SDK to pass chat_template_kwargs
+// (the SDK's extra_body doesn't reliably pass DeepInfra-specific params)
+async function* createDeepInfraStream(messages, opts = {}) {
+  const resp = await fetch('https://api.deepinfra.com/v1/openai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${DEEPINFRA_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: opts.model || LLM_MODEL,
+      messages,
+      stream: true,
+      max_tokens: opts.max_tokens || 1024,
+      temperature: opts.temperature || 0.7,
+      chat_template_kwargs: { enable_thinking: false }
+    })
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`DeepInfra API error ${resp.status}: ${errText}`);
+  }
+
+  // Parse SSE stream into OpenAI-compatible chunk objects
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let partial = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    partial += decoder.decode(value, { stream: true });
+
+    const lines = partial.split('\n');
+    partial = lines.pop(); // Keep incomplete line for next iteration
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data: ')) continue;
+      const data = trimmed.slice(6);
+      if (data === '[DONE]') return;
+      try {
+        yield JSON.parse(data);
+      } catch {
+        // Skip malformed JSON chunks
+      }
+    }
+  }
+}
+
 // ─── Express App ──────────────────────────────────────────────────────────────
 const app = express();
 
@@ -111,18 +163,11 @@ app.post('/api/chat', apiRateLimiter, async (req, res) => {
     // 2. Build system prompt with injected context
     const systemPrompt = buildSystemPrompt(ragContext);
 
-    // 3. Start streaming LLM response from DeepInfra (thinking suppressed)
-    const llmStream = await deepinfraLLM.chat.completions.create({
-      model: LLM_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message }
-      ],
-      stream: true,
-      max_tokens: 512,
-      temperature: 0.7,
-      extra_body: { chat_template_kwargs: { enable_thinking: false } }
-    });
+    // 3. Start streaming LLM response from DeepInfra (thinking suppressed via raw fetch)
+    const llmStream = createDeepInfraStream([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message }
+    ]);
 
     // 4. Sentence-buffered streaming: LLM → sentence detection → TTS → NDJSON
     let fullResponse = '';
@@ -181,17 +226,10 @@ wss.on('connection', (ws, req) => {
       const ragContext = await buildRagContext(message);
       const systemPrompt = buildSystemPrompt(ragContext);
 
-      const llmStream = await deepinfraLLM.chat.completions.create({
-        model: LLM_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        stream: true,
-        max_tokens: 512,
-        temperature: 0.7,
-        extra_body: { chat_template_kwargs: { enable_thinking: false } }
-      });
+      const llmStream = createDeepInfraStream([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ]);
 
       let fullResponse = '';
       for await (const event of sentenceBufferedStream(llmStream, ttsClient, TTS_VOICE, TTS_MODEL)) {

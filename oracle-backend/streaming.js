@@ -15,15 +15,13 @@ const MIN_SENTENCE_CHARS = 8;
  */
 function normalizeTtsText(text) {
   return text
-    // Brand acronym expansion for natural TTS pronunciation
-    .replace(/\bQEGG\b/g, 'Q. E. G. G.')
-    .replace(/\bDRGFC\b/g, 'D. R. G. F. C.')
-    .replace(/\bHMSS\b/g, 'H. M. S. S.')
-    .replace(/\bBCPS\b/g, 'B. C. P. S.')
-    .replace(/\bQUAD\b/g, 'Q. U. A. D.')
-    .replace(/\bLWIS\b/g, 'L. W. I. S.')
-    .replace(/\bSPTS\b/g, 'S. P. T. S.')
-    .replace(/\bUAIMC\b/g, 'U. A. I. M. C.')
+    // Brand pronunciation for natural TTS speech
+    .replace(/\bMetaphy\b/gi, 'Meta-fye')     // "MET-uh-fye" (rhymes with Wi-Fi)
+    .replace(/\bQEGG\b/g, 'Kegg')             // Pronounced "Kegg" (keg + egg, hard K)
+    .replace(/\bDRGFC\b/g, 'D.R.G.F.C.')
+    .replace(/\bHMSS\b/g, 'H.M.S.S.')
+    .replace(/\bBCPS\b/g, 'B.C.P.S.')
+    .replace(/\bUAIMC\b/g, 'you-ay-eye-em-see')
     // Strip markdown that TTS would read aloud
     .replace(/\*\*([^*]+)\*\*/g, '$1')   // **bold**
     .replace(/\*([^*]+)\*/g, '$1')       // *italic*
