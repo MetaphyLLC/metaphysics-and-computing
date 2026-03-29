@@ -34,6 +34,27 @@ function normalizeTtsText(text) {
 }
 
 /**
+ * Strip Qwen3.5 chain-of-thought thinking blocks from a text buffer.
+ * Thinking arrives as <think>...</think> in the stream. We discard it entirely —
+ * visitors should never see or hear the model's internal reasoning.
+ * Handles partial blocks (thinking tag split across chunks) by holding the
+ * buffer until the closing tag arrives.
+ * @param {string} buffer - Current accumulation buffer
+ * @returns {{ clean: string, inThinking: boolean }}
+ */
+function stripThinkingFromBuffer(buffer) {
+  // Remove complete <think>...</think> blocks
+  const cleaned = buffer.replace(/<think>[\s\S]*?<\/think>/g, '');
+  // Detect if we're inside an open thinking block (no closing tag yet)
+  const openIdx = cleaned.lastIndexOf('<think>');
+  if (openIdx !== -1) {
+    // Hold everything from <think> onward — don't emit it yet
+    return { clean: cleaned.slice(0, openIdx).trim(), inThinking: true };
+  }
+  return { clean: cleaned, inThinking: false };
+}
+
+/**
  * Sentence-buffered streaming pipeline.
  * Consumes an LLM stream, detects sentence boundaries,
  * calls TTS on each sentence, and yields NDJSON events.
@@ -44,16 +65,22 @@ function normalizeTtsText(text) {
  *   { type: 'done' }
  *
  * @param {AsyncIterable} llmStream - OpenAI streaming completion
- * @param {Object} ttsClient - OpenAI client (pointed at DeepInfra) for TTS
- * @param {string} voice - TTS voice name (default: 'aura-asteria-en')
+ * @param {Object|null} ttsClient - OpenAI-compatible client for TTS, or null to skip audio
+ * @param {string} voice - TTS voice name (default: 'af_bella')
+ * @param {string} ttsModel - TTS model name (default: 'kokoro')
  */
-async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'aura-asteria-en') {
+async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'af_bella', ttsModel = 'kokoro') {
   let buffer = '';
 
   for await (const chunk of llmStream) {
     const content = chunk.choices[0]?.delta?.content || '';
     if (!content) continue;
     buffer += content;
+
+    // Strip Qwen thinking blocks before sentence detection
+    const { clean, inThinking } = stripThinkingFromBuffer(buffer);
+    if (inThinking) continue;  // Wait for closing </think> tag
+    buffer = clean;
 
     // Attempt to extract complete sentences from the buffer
     let match;
@@ -71,19 +98,20 @@ async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'aura-aster
       yield { type: 'text', content: sentence };
 
       // Generate TTS for this sentence (normalize before sending)
-      try {
-        const audio = await ttsClient.audio.speech.create({
-          model: 'openai/tts-1',
-          voice,
-          input: normalizeTtsText(sentence),
-          response_format: 'mp3'
-        });
-        const audioBuffer = Buffer.from(await audio.arrayBuffer());
-        yield { type: 'audio', data: audioBuffer.toString('base64') };
-      } catch (err) {
-        console.warn(`TTS failed for sentence: ${err.message}`);
-        // Yield error event but keep streaming text
-        yield { type: 'tts_error', message: err.message };
+      if (ttsClient) {
+        try {
+          const audio = await ttsClient.audio.speech.create({
+            model: ttsModel,
+            voice,
+            input: normalizeTtsText(sentence),
+            response_format: 'mp3'
+          });
+          const audioBuffer = Buffer.from(await audio.arrayBuffer());
+          yield { type: 'audio', data: audioBuffer.toString('base64') };
+        } catch (err) {
+          console.warn(`TTS failed for sentence: ${err.message}`);
+          yield { type: 'tts_error', message: err.message };
+        }
       }
     }
   }
@@ -92,18 +120,20 @@ async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'aura-aster
   const remaining = buffer.trim();
   if (remaining.length >= MIN_SENTENCE_CHARS) {
     yield { type: 'text', content: remaining };
-    try {
-      const audio = await ttsClient.audio.speech.create({
-        model: 'openai/tts-1',
-        voice,
-        input: normalizeTtsText(remaining),
-        response_format: 'mp3'
-      });
-      const audioBuffer = Buffer.from(await audio.arrayBuffer());
-      yield { type: 'audio', data: audioBuffer.toString('base64') };
-    } catch (err) {
-      console.warn(`TTS flush failed: ${err.message}`);
-      yield { type: 'tts_error', message: err.message };
+    if (ttsClient) {
+      try {
+        const audio = await ttsClient.audio.speech.create({
+          model: ttsModel,
+          voice,
+          input: normalizeTtsText(remaining),
+          response_format: 'mp3'
+        });
+        const audioBuffer = Buffer.from(await audio.arrayBuffer());
+        yield { type: 'audio', data: audioBuffer.toString('base64') };
+      } catch (err) {
+        console.warn(`TTS flush failed: ${err.message}`);
+        yield { type: 'tts_error', message: err.message };
+      }
     }
   } else if (remaining.length > 0) {
     // Tiny trailing fragment — just yield as text, skip TTS
@@ -122,4 +152,4 @@ function writeNdjsonEvent(res, event) {
   res.write(JSON.stringify(event) + '\n');
 }
 
-module.exports = { sentenceBufferedStream, writeNdjsonEvent, normalizeTtsText };
+module.exports = { sentenceBufferedStream, writeNdjsonEvent, normalizeTtsText, stripThinkingFromBuffer };

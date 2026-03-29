@@ -18,24 +18,28 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'https://www.metaphysicsandcomputing.com';
 const DEEPINFRA_API_KEY = process.env.DEEPINFRA_API_KEY;
 const LLM_MODEL = process.env.LLM_MODEL || 'Qwen/Qwen3.5-397B-A17B';
-const TTS_VOICE = process.env.TTS_VOICE || 'aura-asteria-en';
+const TTS_BASE_URL = process.env.TTS_BASE_URL || null;   // e.g. https://kokoro-xxx.up.railway.app/v1
+const TTS_MODEL    = process.env.TTS_MODEL    || 'kokoro';
+const TTS_VOICE    = process.env.TTS_VOICE    || 'af_bella';
+const TTS_API_KEY  = process.env.TTS_API_KEY  || 'not-needed';
 
 if (!DEEPINFRA_API_KEY) {
   console.error('FATAL: DEEPINFRA_API_KEY is not set. Copy .env.example to .env and add your key.');
   process.exit(1);
 }
 
-// ─── DeepInfra Clients ────────────────────────────────────────────────────────
-// Both LLM and TTS use the OpenAI SDK pointed at DeepInfra's OpenAI-compatible endpoint
+// ─── LLM Client (DeepInfra) ───────────────────────────────────────────────────
 const deepinfraLLM = new OpenAI({
   apiKey: DEEPINFRA_API_KEY,
   baseURL: 'https://api.deepinfra.com/v1/openai'
 });
 
-const deepinfraTTS = new OpenAI({
-  apiKey: DEEPINFRA_API_KEY,
-  baseURL: 'https://api.deepinfra.com/v1/openai'
-});
+// ─── TTS Client (Kokoro-FastAPI or any OpenAI-compatible TTS endpoint) ─────────
+// Falls back to null (TTS disabled) if TTS_BASE_URL is not configured.
+const ttsClient = TTS_BASE_URL ? new OpenAI({
+  apiKey: TTS_API_KEY,
+  baseURL: TTS_BASE_URL
+}) : null;
 
 // ─── Express App ──────────────────────────────────────────────────────────────
 const app = express();
@@ -66,6 +70,8 @@ app.get('/api/health', async (req, res) => {
     uaimc: uaimcHealthy,
     deepinfra: deepinfraConfigured,
     model: LLM_MODEL,
+    tts: ttsClient ? TTS_MODEL : 'disabled',
+    tts_voice: TTS_VOICE,
     timestamp: new Date().toISOString()
   });
 });
@@ -105,7 +111,7 @@ app.post('/api/chat', apiRateLimiter, async (req, res) => {
     // 2. Build system prompt with injected context
     const systemPrompt = buildSystemPrompt(ragContext);
 
-    // 3. Start streaming LLM response from DeepInfra
+    // 3. Start streaming LLM response from DeepInfra (thinking suppressed)
     const llmStream = await deepinfraLLM.chat.completions.create({
       model: LLM_MODEL,
       messages: [
@@ -114,12 +120,13 @@ app.post('/api/chat', apiRateLimiter, async (req, res) => {
       ],
       stream: true,
       max_tokens: 512,
-      temperature: 0.7
+      temperature: 0.7,
+      extra_body: { chat_template_kwargs: { enable_thinking: false } }
     });
 
     // 4. Sentence-buffered streaming: LLM → sentence detection → TTS → NDJSON
     let fullResponse = '';
-    for await (const event of sentenceBufferedStream(llmStream, deepinfraTTS, TTS_VOICE)) {
+    for await (const event of sentenceBufferedStream(llmStream, ttsClient, TTS_VOICE, TTS_MODEL)) {
       if (event.type === 'text') {
         fullResponse += event.content + ' ';
       }
@@ -182,11 +189,12 @@ wss.on('connection', (ws, req) => {
         ],
         stream: true,
         max_tokens: 512,
-        temperature: 0.7
+        temperature: 0.7,
+        extra_body: { chat_template_kwargs: { enable_thinking: false } }
       });
 
       let fullResponse = '';
-      for await (const event of sentenceBufferedStream(llmStream, deepinfraTTS, TTS_VOICE)) {
+      for await (const event of sentenceBufferedStream(llmStream, ttsClient, TTS_VOICE, TTS_MODEL)) {
         if (ws.readyState !== ws.OPEN) break;
         if (event.type === 'text') fullResponse += event.content + ' ';
         ws.send(JSON.stringify(event));
@@ -212,7 +220,9 @@ wss.on('connection', (ws, req) => {
 server.listen(PORT, () => {
   console.log(`The Oracle bridge server listening on port ${PORT}`);
   console.log(`  CORS origin: ${CORS_ORIGIN}`);
-  console.log(`  LLM model:   ${LLM_MODEL}`);
+  console.log(`  LLM model:   ${LLM_MODEL} (thinking suppressed)`);
+  console.log(`  TTS:         ${TTS_BASE_URL ? `${TTS_MODEL} @ ${TTS_BASE_URL}` : 'disabled'}`);
+  console.log(`  TTS voice:   ${TTS_VOICE}`);
   console.log(`  UAIMC:       ${process.env.UAIMC_URL || 'http://localhost:8765'}`);
   console.log(`  REST:  POST http://localhost:${PORT}/api/chat`);
   console.log(`  Health: GET http://localhost:${PORT}/api/health`);
