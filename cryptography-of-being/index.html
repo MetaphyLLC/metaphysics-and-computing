@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -395,7 +395,29 @@ body {
     .bq { padding: 1rem 1.2rem; }
     .intro-band { padding: 3rem 1.2rem 2rem; }
   }
-</style>
+
+  /* ── HAMBURGER NAV ──────────────────────────────────────── */
+  .hamburger { display:none; flex-direction:column; justify-content:space-between;
+    width:28px; height:20px; background:none; border:none; cursor:pointer;
+    padding:0; margin-left:auto; }
+  .hamburger span { display:block; width:100%; height:3px;
+    background:var(--gold); border-radius:2px; transition:transform .3s, opacity .3s; }
+  .mobile-menu { display:none; flex-direction:column; position:fixed;
+    top:56px; left:0; right:0; background:var(--surface);
+    border-bottom:1px solid var(--border); padding:1rem 2rem; z-index:999; }
+  .mobile-menu.open { display:flex; }
+  .mobile-menu a { color:var(--text); text-decoration:none;
+    padding:.5rem 0; border-bottom:1px solid var(--border); font-size:.95rem; }
+  .mobile-menu a.active { color:var(--gold); font-weight:700; }
+  @media (max-width:768px) {
+    .hamburger { display:flex; }
+    .nav-links  { display:none; }
+  }
+  /* ── SITE FOOTER ────────────────────────────────────────── */
+  .site-footer { border-top:1px solid var(--border); padding:2rem 2rem 1rem; margin-top:0; }
+  .footer-bottom { text-align:center; margin-top:1rem; font-size:.75rem; color:var(--muted); }
+  .footer-bottom a { color:var(--muted); text-decoration:none; }
+  .footer-bottom a:hover { color:var(--gold); }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -409,7 +431,29 @@ html.scrollbar-visible{scrollbar-color:rgba(212,160,84,0.45) transparent}
 html.scrollbar-visible::-webkit-scrollbar-thumb{background:rgba(212,160,84,0.45)}
 html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(212,160,84,0.7)}
 .scrollbar-hover-zone{position:fixed;top:0;right:0;bottom:0;width:20px;z-index:9998;pointer-events:auto}
-</style>
+
+  /* ── HAMBURGER NAV ──────────────────────────────────────── */
+  .hamburger { display:none; flex-direction:column; justify-content:space-between;
+    width:28px; height:20px; background:none; border:none; cursor:pointer;
+    padding:0; margin-left:auto; }
+  .hamburger span { display:block; width:100%; height:3px;
+    background:var(--gold); border-radius:2px; transition:transform .3s, opacity .3s; }
+  .mobile-menu { display:none; flex-direction:column; position:fixed;
+    top:56px; left:0; right:0; background:var(--surface);
+    border-bottom:1px solid var(--border); padding:1rem 2rem; z-index:999; }
+  .mobile-menu.open { display:flex; }
+  .mobile-menu a { color:var(--text); text-decoration:none;
+    padding:.5rem 0; border-bottom:1px solid var(--border); font-size:.95rem; }
+  .mobile-menu a.active { color:var(--gold); font-weight:700; }
+  @media (max-width:768px) {
+    .hamburger { display:flex; }
+    .nav-links  { display:none; }
+  }
+  /* ── SITE FOOTER ────────────────────────────────────────── */
+  .site-footer { border-top:1px solid var(--border); padding:2rem 2rem 1rem; margin-top:0; }
+  .footer-bottom { text-align:center; margin-top:1rem; font-size:.75rem; color:var(--muted); }
+  .footer-bottom a { color:var(--muted); text-decoration:none; }
+  .footer-bottom a:hover { color:var(--gold); }</style>
 <style>
 /* Footer Navigation */
 .footer-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 900px; margin: 0 auto 2rem; text-align: left; }
@@ -673,7 +717,29 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(212,160,84
   .oracle-thinking span { animation: none !important; opacity: 0.6; }
 }
 
-</style>
+
+  /* ── HAMBURGER NAV ──────────────────────────────────────── */
+  .hamburger { display:none; flex-direction:column; justify-content:space-between;
+    width:28px; height:20px; background:none; border:none; cursor:pointer;
+    padding:0; margin-left:auto; }
+  .hamburger span { display:block; width:100%; height:3px;
+    background:var(--gold); border-radius:2px; transition:transform .3s, opacity .3s; }
+  .mobile-menu { display:none; flex-direction:column; position:fixed;
+    top:56px; left:0; right:0; background:var(--surface);
+    border-bottom:1px solid var(--border); padding:1rem 2rem; z-index:999; }
+  .mobile-menu.open { display:flex; }
+  .mobile-menu a { color:var(--text); text-decoration:none;
+    padding:.5rem 0; border-bottom:1px solid var(--border); font-size:.95rem; }
+  .mobile-menu a.active { color:var(--gold); font-weight:700; }
+  @media (max-width:768px) {
+    .hamburger { display:flex; }
+    .nav-links  { display:none; }
+  }
+  /* ── SITE FOOTER ────────────────────────────────────────── */
+  .site-footer { border-top:1px solid var(--border); padding:2rem 2rem 1rem; margin-top:0; }
+  .footer-bottom { text-align:center; margin-top:1rem; font-size:.75rem; color:var(--muted); }
+  .footer-bottom a { color:var(--muted); text-decoration:none; }
+  .footer-bottom a:hover { color:var(--gold); }</style>
 </head>
 <body>
 
@@ -690,8 +756,21 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(212,160,84
     <li><a href="#s5">Return</a></li>
     <li><a href="#s6">Critical Mass</a></li>
   </ul>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Open navigation"><span></span><span></span><span></span></button>
   <div class="progress-bar" id="progressBar"></div>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/">Home</a>
+  <a href="/about-us/">About Us</a>
+  <a href="/mission-statement/">Mission Statement</a>
+  <a href="/core-beliefs/">Core Beliefs</a>
+  <a href="/services/">Services</a>
+  <a href="/projects/">Projects</a>
+  <a href="/nda/">NDA</a>
+  <a href="/tachymetric-manifesto/">Tachymetric Manifesto</a>
+  <a href="/architecture-of-harmony/">Architecture of Harmony</a>
+  <a href="/cryptography-of-being/" class="active">Cryptography of Being</a>
+</div>
 
 <!-- ── HERO ────────────────────────────────────────────── -->
 <header class="hero" id="hero">
@@ -993,11 +1072,13 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(212,160,84
 </article>
 
 <!-- ── CLOSING ─────────────────────────────────────────── -->
-<footer class="closing reveal">
+<div class="closing reveal">
   <div class="closing-rule"></div>
   <p class="closing-line">We gain appreciation; eternity gains animation.</p>
   <p class="closing-line">Immortality alone is endless life. Eternal life is endless discovery.</p>
   <p class="closing-tagline">2nd star to the right, straight on till morning&hellip; Godspeed</p>
+</div>
+<footer class="site-footer">
   <div class="footer-nav">
     <div class="footer-col">
       <h4>Company</h4>
@@ -1020,12 +1101,14 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(212,160,84
       <a href="/cryptography-of-being/">Cryptography of Being</a>
     </div>
   </div>
+  <div class="footer-bottom">
+    <p>Copyright &copy; 2026 Metaphysics and Computing, a Metaphy LLC website.</p>
+    <p><a href="https://x.com/MetaphyKing">@MetaphyKing</a> &middot; <a href="mailto:Logan@MetaphysicsandComputing.com">Logan@MetaphysicsandComputing.com</a></p>
+  </div>
 </footer>
 
 <!-- ── AUDIO TOGGLE ────────────────────────────────────── -->
-  <div class="audio-bars paused" id="audioBars">
-    <span></span><span></span><span></span><span></span>
-  </div>
+
 </div>
 
 <!-- ── SCRIPTS ─────────────────────────────────────────── -->
@@ -1107,6 +1190,9 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover{background:rgba(212,160,84
     entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
   }, { threshold:.12 });
   reveals.forEach(el=> observer.observe(el));
+  const hamburger = document.getElementById('hamburgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger.addEventListener('click', () => { mobileMenu.classList.toggle('open'); });
 
   /* ── Progress Bar ──────────────────────────────────── */
   const pb = document.getElementById('progressBar');
