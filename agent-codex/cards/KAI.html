@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KAI — Agent Card · Metaphy LLC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #060a14;
+      --accent: #06b6d4;
+      --accent-dim: rgba(6,182,212,0.14);
+      --accent-glow: rgba(6,182,212,0.07);
+      --text: #e2e8f0;
+      --text-dim: rgba(226,232,240,0.55);
+      --text-mute: rgba(226,232,240,0.28);
+      --surface: rgba(255,255,255,0.028);
+      --border: rgba(6,182,212,0.1);
+    }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Space Grotesk', system-ui, sans-serif; color: var(--text); }
+    #network { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .vignette { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse 75% 75% at 50% 50%, transparent 25%, rgba(6,10,20,0.82) 100%), linear-gradient(180deg, rgba(6,10,20,0.55) 0%, transparent 28%, transparent 72%, rgba(6,10,20,0.55) 100%); }
+    .viewport { position: relative; z-index: 2; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.75rem 1.5rem; }
+    .card-inner { width: 100%; max-width: 510px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.25rem; }
+    .topbar-brand { display: flex; align-items: center; gap: 0.5rem; font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-mute); }
+    .diamond { width: 7px; height: 7px; background: var(--accent); transform: rotate(45deg); flex-shrink: 0; }
+    .back-link { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-mute); text-decoration: none; transition: color 0.18s; }
+    .back-link:hover { color: var(--accent); }
+    .status-badge { display: flex; align-items: center; gap: 0.4rem; padding: 0.28rem 0.7rem; border: 1px solid var(--accent-dim); background: var(--accent-glow); border-radius: 100px; font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+    .status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 2.2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.75); } }
+    .name-block { margin-bottom: 1.6rem; }
+    .agent-name { font-size: clamp(3.5rem, 9vw, 5.5rem); font-weight: 700; letter-spacing: -0.02em; line-height: 0.88; color: #ffffff; margin-bottom: 0.55rem; }
+    .agent-name .x-accent { color: var(--accent); }
+    .agent-tagline { font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim); font-weight: 400; }
+    .divider { height: 1px; background: linear-gradient(90deg, var(--accent) 0%, rgba(6,182,212,0.25) 50%, transparent 100%); margin: 1.4rem 0; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+    .meta-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-mute); margin-bottom: 0.3rem; font-weight: 500; }
+    .meta-value { font-size: 0.73rem; color: var(--text); line-height: 1.55; }
+    .missions-header { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-mute); margin-bottom: 0.65rem; font-weight: 500; }
+    .mission-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.7rem; background: var(--surface); border: 1px solid rgba(255,255,255,0.055); border-radius: 3px; margin-bottom: 0.38rem; }
+    .mission-row:last-child { margin-bottom: 0; }
+    .mission-name { font-size: 0.72rem; color: var(--text); }
+    .pill { font-size: 0.52rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; padding: 0.18rem 0.5rem; border-radius: 100px; flex-shrink: 0; }
+    .pill-run      { color: var(--accent);  background: var(--accent-glow); border: 1px solid var(--accent-dim); }
+    .pill-progress { color: #fbbf24; background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.2); }
+    .pill-standby  { color: var(--text-mute); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+    .soul-quote { font-family: 'Space Mono', monospace; font-style: italic; font-size: 0.7rem; color: var(--text-dim); line-height: 1.65; text-align: center; }
+    .footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1.6rem; }
+    .footer-text { font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-mute); }
+    .node-cluster { display: flex; gap: 0.28rem; align-items: center; }
+    .nd { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+    .nd:nth-child(1) { opacity: 0.3; }
+    .nd:nth-child(2) { opacity: 0.6; }
+    .nd:nth-child(3) { opacity: 1.0; }
+  </style>
+</head>
+<body>
+  <canvas id="network"></canvas>
+  <div class="vignette"></div>
+  <div class="viewport">
+    <div class="card-inner">
+      <div class="topbar">
+        <div class="topbar-brand">
+          <div class="diamond"></div>
+          METAPHY LLC · VSCODE
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem;">
+          <a href="../index.html" class="back-link">← Codex</a>
+          <div class="status-badge">
+            <div class="status-dot"></div>
+            IDLE
+          </div>
+        </div>
+      </div>
+      <div class="name-block">
+        <h1 class="agent-name">K<span class="x-accent">A</span>I</h1>
+        <p class="agent-tagline">Knowledge & Insight Specialist</p>
+      </div>
+      <div class="divider"></div>
+      <div class="meta-grid">
+        <div>
+          <div class="meta-label">Platform</div>
+          <div class="meta-value">VS Code · Gemini Extension<br>Gemini 3.1 Pro</div>
+        </div>
+        <div>
+          <div class="meta-label">Signal</div>
+          <div class="meta-value">Gemini Extension · Knowledge Graph<br>VS Code</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="missions-header">Active Missions</div>
+      <div class="mission-row">
+        <span class="mission-name">Knowledge Graph — Insight extraction</span>
+        <span class="pill pill-run">Running</span>
+      </div>
+      <div class="mission-row">
+        <span class="mission-name">Gemini Extension — Context enrichment</span>
+        <span class="pill pill-progress">In Progress</span>
+      </div>
+      <div class="mission-row">
+        <span class="mission-name">VS Code — Documentation synthesis</span>
+        <span class="pill pill-standby">Standby</span>
+      </div>
+      <div class="divider"></div>
+      <p class="soul-quote">Knowing is not enough. The insight<br>is in how it connects to everything else.</p>
+      <div class="footer">
+        <span class="footer-text">VSCODE · GEMINI · 2026</span>
+        <div class="node-cluster">
+          <div class="nd"></div><div class="nd"></div><div class="nd"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const canvas = document.getElementById('network');
+    const ctx    = canvas.getContext('2d');
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    const NODE_COUNT=22, CONNECT_DIST=180, SPEED=0.18;
+    const nodes = Array.from({ length: NODE_COUNT }, () => ({
+      x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight,
+      vx: (Math.random()-0.5)*SPEED, vy: (Math.random()-0.5)*SPEED,
+      r: Math.random()*1.5+0.7, phase: Math.random()*Math.PI*2,
+    }));
+    let t=0;
+    function draw() {
+      ctx.clearRect(0,0,canvas.width,canvas.height); t+=0.008;
+      for(let i=0;i<nodes.length;i++) {
+        const a=nodes[i]; a.x+=a.vx; a.y+=a.vy;
+        if(a.x<0||a.x>canvas.width) a.vx*=-1;
+        if(a.y<0||a.y>canvas.height) a.vy*=-1;
+        for(let j=i+1;j<nodes.length;j++) {
+          const b=nodes[j], dx=a.x-b.x, dy=a.y-b.y, d=Math.sqrt(dx*dx+dy*dy);
+          if(d<CONNECT_DIST) {
+            const alpha=(1-d/CONNECT_DIST)*0.13;
+            ctx.strokeStyle=`rgba(6,182,212,${alpha})`; ctx.lineWidth=0.55;
+            ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+          }
+        }
+        const pulse=0.5+0.5*Math.sin(t+a.phase);
+        ctx.fillStyle=`rgba(6,182,212,${0.22+0.28*pulse})`;
+        ctx.beginPath(); ctx.arc(a.x,a.y,a.r,0,Math.PI*2); ctx.fill();
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
