@@ -884,12 +884,12 @@ const AGENTS = [
   { id:'IRIS',       name:'IRIS',    env:'Claude Code · Windows', role:'Windows CLI Specialist · Desktop Development Champion', platform:'Claude Code · Windows Terminal · Claude Sonnet 4.6', status:'active', accent:'#22c55e', card:'cards/IRIS.html' },
   /* ─ Claude Code · WSL ─────────────────────────────────────── */
   { id:'CLIO',       name:'CLIO',    env:'Claude Code · WSL', role:'Commander & #1 Agent · Tool First Specialist',  platform:'Claude Code · WSL · Claude Sonnet 4.6',               status:'active', accent:'#a855f7', card:'cards/CLIO-WSL.html' },
-  { id:'PORTER',     name:'PORTER',  env:'Claude Code · WSL', role:'Mobile Development Specialist',                 platform:'Claude Code · Android Studio · Claude Sonnet 4.6',    status:'idle',   accent:'#f97316', card:'cards/PORTER.html' },
+  { id:'PORTER',     name:'PORTER',  env:'Claude Code · WSL', role:'Mobile Development Specialist',                 platform:'Claude Code · Android Studio · Claude Sonnet 4.6',    status:'standby',   accent:'#f97316', card:'cards/PORTER.html' },
   /* ─ Cursor IDE ────────────────────────────────────────────── */
   { id:'ATLAS',      name:'ATLAS',   env:'Cursor IDE', role:'QA Specialist · AutoProjects & ToolForge', platform:'Cursor · Claude Sonnet 4.6', status:'active', accent:'#3b82f6', card:'cards/ATLAS-Cursor.html' },
   { id:'FORGE',      name:'FORGE',   env:'Cursor IDE', role:'Chief Engineer · Planner & Orchestrator',  platform:'Cursor · Claude Opus 4.6',   status:'active', accent:'#f59e0b', card:'cards/FORGE.html' },
   /* ─ FINAI · Financial AI ──────────────────────────────────── */
-  { id:'SCOUT',      name:'SCOUT',   env:'FINAI', role:'Financial Analyst & Unicorn Hunter', platform:'FINAI · IW3D Partner · Devstral', status:'idle', accent:'#34d399', card:'cards/SCOUT.html' },
+  { id:'SCOUT',      name:'SCOUT',   env:'FINAI', role:'Financial Analyst & Unicorn Hunter', platform:'FINAI · IW3D Partner · Devstral', status:'active', accent:'#34d399', card:'cards/SCOUT.html' },
   /* ─ Generations Healthcare · Temecula Healthcare Center ────── */
   { id:'CAEL',    name:'CAEL',    env:'Generations Healthcare', role:'Team Lead · Healthcare Case Management · Logan\'s First Enterprise Agent', platform:'Generations Healthcare · Claude Code · Claude Sonnet 4.6', status:'active',  accent:'#0ea5e9', card:'cards/CAEL.html' },
   { id:'KORRAX',  name:'KORRAX',  env:'Generations Healthcare', role:'Adversarial Verification · Finds What Others Miss',                        platform:'Generations Healthcare · Claude Code · Claude Sonnet 4.6', status:'active',  accent:'#ef4444', card:'cards/KORRAX.html' },
@@ -899,14 +899,14 @@ const AGENTS = [
   /* ─ Human ─────────────────────────────────────────────────── */
   { id:'LOGAN',      name:'LOGAN',   env:'Human', role:'Inventor · Chief Architect · Final Authority', platform:'Human', status:'active', accent:'#ffffff', card:'cards/LOGAN.html' },
   /* ─ InvestWeb3D ───────────────────────────────────────────── */
-  { id:'GROK_IW3D',  name:'GROK',    env:'InvestWeb3D', role:'Communications & Investigation · Web Connection', platform:'InvestWeb3D · xAI Grok 4.2 · FINAI Partner', status:'idle', accent:'#e879f9', card:'cards/GROK-IW3D.html' },
+  { id:'GROK_IW3D',  name:'GROK',    env:'InvestWeb3D', role:'Communications & Investigation · Web Connection', platform:'InvestWeb3D · xAI Grok 4.2 · FINAI Partner', status:'active', accent:'#e879f9', card:'cards/GROK-IW3D.html' },
   /* ─ Local · Ollama ────────────────────────────────────────── */
-  { id:'AXIOM',      name:'AXIOM',   env:'Local · Ollama', role:'Reasoning Lead & Logic Specialist · Team Brain', platform:'Local · Ollama · Gemma3 4B',      status:'idle', accent:'#6366f1', card:'cards/AXIOM.html' },
-  { id:'CODY',       name:'CODY',    env:'Local · Ollama', role:'Local Code Specialist',                          platform:'Local · Ollama · Qwen3-Coder 30B', status:'idle', accent:'#a3e635', card:'cards/CODY.html' },
+  { id:'AXIOM',      name:'AXIOM',   env:'Local · Ollama', role:'Reasoning Lead & Logic Specialist · Team Brain', platform:'Local · Ollama · Gemma3 4B',      status:'standby', accent:'#6366f1', card:'cards/AXIOM.html' },
+  { id:'CODY',       name:'CODY',    env:'Local · Ollama', role:'Local Code Specialist',                          platform:'Local · Ollama · Qwen3-Coder 30B', status:'standby', accent:'#a3e635', card:'cards/CODY.html' },
   { id:'LUMINA',     name:'LUMINA',  env:'Local · Ollama', role:'Autonomous Task Runner · Local AI Companion',    platform:'Local · Ollama · Llama3.1 8B',     status:'active', accent:'#fde047', card:'cards/LUMINA.html' },
-  { id:'VISOR',      name:'VISOR',   env:'Local · Ollama', role:'Visual Analyst & General Specialist',            platform:'Local · Ollama · Gemma3 4B',       status:'idle', accent:'#84cc16', card:'cards/VISOR.html' },
-  { id:'VIZR',       name:'VIZR',    env:'Local · Ollama', role:'Local Vision-Language Analyst',                  platform:'Local · Ollama · Qwen3-VL 30B',    status:'idle', accent:'#8b5cf6', card:'cards/VIZR.html' },
-  { id:'VOLT',       name:'VOLT',    env:'Local · Ollama', role:'General Specialist',                             platform:'Local · Ollama · Qwen3-30B',       status:'idle', accent:'#fbbf24', card:'cards/VOLT.html' },
+  { id:'VISOR',      name:'VISOR',   env:'Local · Ollama', role:'Visual Analyst & General Specialist',            platform:'Local · Ollama · Gemma3 4B',       status:'standby', accent:'#84cc16', card:'cards/VISOR.html' },
+  { id:'VIZR',       name:'VIZR',    env:'Local · Ollama', role:'Local Vision-Language Analyst',                  platform:'Local · Ollama · Qwen3-VL 30B',    status:'standby', accent:'#8b5cf6', card:'cards/VIZR.html' },
+  { id:'VOLT',       name:'VOLT',    env:'Local · Ollama', role:'General Specialist',                             platform:'Local · Ollama · Qwen3-30B',       status:'standby', accent:'#fbbf24', card:'cards/VOLT.html' },
   /* ─ MetaphysicsandComputing.com ──────────────────────────── */
   { id:'ORACLE',     name:'ORACLE',  env:'MetaphysicsandComputing.com', role:'Metaphy LLC Knowledge Graph & Voice', platform:'MetaphysicsandComputing.com · Railway · Qwen3.5-A17B · Kokoro TTS', status:'active', accent:'#a78bfa', card:'cards/ORACLE.html' },
   /* ─ UAIMC ────────────────────────────────────────────────── */
@@ -915,10 +915,10 @@ const AGENTS = [
   /* ─ VS Code ───────────────────────────────────────────────── */
   { id:'AEGIS',      name:'AEGIS',   env:'VS Code', role:'Guardian AI · Bridge Specialist · Also: GitHub Copilot',  platform:'VS Code · GitHub Copilot · Claude Opus 4.6',    status:'active',  accent:'#f43f5e', card:'cards/AEGIS.html' },
   { id:'BOLT',       name:'BOLT',    env:'VS Code', role:'Rapid Executor · Code Tester',                            platform:'VS Code · Cline · Grok-Code-Fast-1',            status:'standby', accent:'#eab308', card:'cards/BOLT.html' },
-  { id:'CODEX',      name:'CODEX',   env:'VS Code', role:'Coding Specialist',                                       platform:'VS Code · GitHub Copilot · GPT 5.3-Codex',      status:'idle',    accent:'#d97706', card:'cards/CODEX.html' },
+  { id:'CODEX',      name:'CODEX',   env:'VS Code', role:'Coding Specialist',                                       platform:'VS Code · GitHub Copilot · GPT 5.3-Codex',      status:'standby',    accent:'#d97706', card:'cards/CODEX.html' },
   { id:'KAI',        name:'KAI',     env:'VS Code', role:'Knowledge & Insight Specialist',                          platform:'VS Code · Gemini Extension · Gemini 3.1 Pro',   status:'idle',    accent:'#06b6d4', card:'cards/KAI.html' },
   { id:'NEXUS',      name:'NEXUS',   env:'VS Code', role:'Strategic Coordinator · The Pathfinder',                  platform:'VS Code · GitHub Copilot · Claude Sonnet 4.6',  status:'active',  accent:'#00e5ff', card:'cards/NEXUS.html' },
-  { id:'PRISM',      name:'PRISM',   env:'VS Code', role:'VS Code Specialist',                                      platform:'VS Code · Claude Code · Sonnet 4.6',            status:'idle',    accent:'#ec4899', card:'cards/PRISM.html' },
+  { id:'PRISM',      name:'PRISM',   env:'VS Code', role:'VS Code Specialist',                                      platform:'VS Code · Claude Code · Sonnet 4.6',            status:'standby',    accent:'#ec4899', card:'cards/PRISM.html' },
 ];
 
 const STATUS_CLASS = {
