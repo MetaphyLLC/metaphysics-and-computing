@@ -1603,7 +1603,9 @@
     })();
 
     /* ──────────────────────────────────────────────────────
-       PARTICLES SYSTEM — animated amber/indigo field
+       PARTICLES SYSTEM — multi-colored + gradient-connected
+       Amber-Indigo palette. Each line gradient-fades between
+       particle colors. Same pattern as TSOL for site cohesion.
        ────────────────────────────────────────────────────── */
     (function () {
       var canvas = document.getElementById('particles-canvas');
@@ -1620,15 +1622,23 @@
       resize();
       window.addEventListener('resize', resize);
 
-      var COUNT = window.innerWidth < 768 ? 40 : 80;
+      // Particle colors — Amber-Indigo palette (TCOB)
+      // Amber rgba: 212, 160, 84   |   Indigo rgba: 79, 70, 229
+      var COLOR_A = [212, 160, 84];  // amber primary
+      var COLOR_B = [79, 70, 229];   // indigo accent
+      var COUNT = window.innerWidth < 768 ? 50 : 90;
+      var CONNECT_DIST = 150;
+
       for (var i = 0; i < COUNT; i++) {
+        // 65% amber, 35% indigo (TCOB ratio)
+        var useAccent = Math.random() > 0.65;
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
           vx: (Math.random() - 0.5) * 0.3,
           vy: (Math.random() - 0.5) * 0.3,
           r: Math.random() * 1.6 + 0.4,
-          color: Math.random() > 0.65 ? 'rgba(79, 70, 229, ' : 'rgba(212, 160, 84, '
+          rgb: useAccent ? COLOR_B : COLOR_A
         });
       }
 
@@ -1643,6 +1653,8 @@
 
       function tick() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update + draw particles
         for (var i = 0; i < particles.length; i++) {
           var p = particles[i];
           p.x += p.vx;
@@ -1650,7 +1662,7 @@
           if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
           if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
 
-          // Mouse interaction
+          // Mouse repulsion
           var dx = p.x - mouse.x;
           var dy = p.y - mouse.y;
           var dist = Math.sqrt(dx * dx + dy * dy);
@@ -1660,11 +1672,36 @@
             p.y += (dy / dist) * force * 0.6;
           }
 
+          // Draw particle
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = p.color + '0.45)';
+          ctx.fillStyle = 'rgba(' + p.rgb[0] + ',' + p.rgb[1] + ',' + p.rgb[2] + ',0.55)';
           ctx.fill();
         }
+
+        // Draw gradient-connected lines between nearby particles
+        for (var i = 0; i < particles.length; i++) {
+          for (var j = i + 1; j < particles.length; j++) {
+            var p1 = particles[i];
+            var p2 = particles[j];
+            var ldx = p1.x - p2.x;
+            var ldy = p1.y - p2.y;
+            var ldist = Math.sqrt(ldx * ldx + ldy * ldy);
+            if (ldist < CONNECT_DIST) {
+              var alpha = (1 - ldist / CONNECT_DIST) * 0.35;
+              var gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+              gradient.addColorStop(0, 'rgba(' + p1.rgb[0] + ',' + p1.rgb[1] + ',' + p1.rgb[2] + ',' + alpha + ')');
+              gradient.addColorStop(1, 'rgba(' + p2.rgb[0] + ',' + p2.rgb[1] + ',' + p2.rgb[2] + ',' + alpha + ')');
+              ctx.strokeStyle = gradient;
+              ctx.lineWidth = 0.5;
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.stroke();
+            }
+          }
+        }
+
         if (!prefersReduced) requestAnimationFrame(tick);
       }
       tick();
