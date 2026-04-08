@@ -23,17 +23,18 @@ This repository hosts all custom-built HTML pages for the Metaphysics and Comput
 
 | # | Page | URL Slug | Status | File |
 |---|------|----------|--------|------|
-| 1 | Home | `/` | GoDaddy managed | — |
-| 2 | About Us | `/about-us` | GoDaddy managed | — |
-| 3 | Projects | `/projects` | GoDaddy managed | — |
-| 4 | NDA | `/nda` | GoDaddy managed (restricted) | — |
-| 5 | Proprietary | `/proprietary` | GoDaddy managed (restricted) | — |
-| 6 | Services | `/services` | GoDaddy managed | — |
-| 7 | Mission Statement | `/mission-statement` | GoDaddy managed | — |
-| 8 | **Core Beliefs** | `/core-beliefs` | ✅ Custom HTML | `pages/core-beliefs/index.html` |
-| 9 | Tachymetric Manifesto | `/tachymetric-manifesto` | 🔜 Upcoming | — |
-| 10 | Architecture of Harmony | `/architecture-of-harmony` | 🔜 Upcoming | — |
-| 11 | Cryptography of Being | `/cryptography-of-being` | 🔜 Upcoming | — |
+| 1 | Home | `/` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/index.html` |
+| 2 | About Us | `/about-us` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/about-us/index.html` |
+| 3 | Projects | `/projects` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/projects/index.html` |
+| 4 | NDA | `/nda` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/nda/index.html` |
+| 5 | Proprietary | `/proprietary` | ✅ Custom HTML | `Not Active` |
+| 6 | Services | `/services` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/services/index.html` |
+| 7 | Mission Statement | `/mission-statement` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/tree/main/mission-statement` |
+| 8 | **Core Beliefs** | `/core-beliefs` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/core-beliefs/index.html` |
+| 9 | Tachymetric Manifesto | `/tachymetric-manifesto` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/tachymetric-manifesto/index.html` |
+| 10 | Architecture of Harmony | `/architecture-of-harmony` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/architecture-of-harmony/index.html` |
+| 11 | Cryptography of Being | `/cryptography-of-being` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/cryptography-of-being/index.html` |
+| 12 | Synthesis of Light | `/synthesis-of-light` | ✅ Custom HTML | `MetaphyLLC/metaphysics-and-computing/blob/main/synthesis-of-light/index.html` |
 
 ---
 
@@ -43,11 +44,30 @@ This repository hosts all custom-built HTML pages for the Metaphysics and Comput
 metaphysics-and-computing/
 ├── README.md
 └── pages/
+    ├── home/
+    │   └── index.html          ← ✅ Done
+    ├── about-us/
+    │   └── index.html          ← ✅ Done
+    ├── mission-statement/
+    │   └── index.html          ← ✅ Done
     ├── core-beliefs/
     │   └── index.html          ← ✅ Done
-    ├── tachymetric-manifesto/  ← 🔜 In progress
-    ├── architecture-of-harmony/ ← 🔜 In progress
-    └── cryptography-of-being/  ← 🔜 In progress
+    ├── agent-codex/
+    │   └── index.html          ← ✅ Done
+    ├── services/
+    │   └── index.html          ← ✅ Done
+    ├── projects/
+    │   └── index.html          ← ✅ Done
+    ├── nda/
+    │   └── index.html          ← ✅ Done
+    ├── tachymetric-manifesto/  
+    │   └── index.html          ← ✅ Done
+    ├── architecture-of-harmony/ 
+    │   └── index.html          ← ✅ Done
+    ├── syntehsis-of-light/ 
+    │   └── index.html          ← ✅ Done
+    └── cryptography-of-being/  
+        └── index.html          ← ✅ Done
 ```
 
 ---
