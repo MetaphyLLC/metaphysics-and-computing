@@ -172,10 +172,10 @@
      ══════════════════════════════════════════════════════ */
   .hero {
     position: relative;
-    min-height: 100vh;
+    min-height: 85vh;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center;
-    padding: 6rem 2rem 4rem;
+    padding: 5rem 2rem 3rem;
     overflow: hidden;
   }
   .hero-video {
@@ -258,19 +258,24 @@
   }
   .hero-byline strong { color: var(--text); font-style: normal; font-weight: 600; }
   .hero-scroll-cue {
-    position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    position: absolute; bottom: 2rem; left: 50%;
     color: var(--text-dim);
-    opacity: 0; animation: fadeUp .8s 1.4s ease forwards, bobble 2.5s 2s ease-in-out infinite;
+    opacity: 0;
+    animation: scrollCueFadeIn .8s 1.4s ease forwards, scrollCueBobble 2.5s 2.2s ease-in-out infinite;
     z-index: 2;
   }
-  .hero-scroll-cue svg { width: 24px; height: 24px; }
+  .hero-scroll-cue svg { width: 24px; height: 24px; display: block; }
+  @keyframes scrollCueFadeIn {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes scrollCueBobble {
+    0%, 100% { transform: translate(-50%, 0); }
+    50%      { transform: translate(-50%, 8px); }
+  }
   @keyframes fadeUp {
     to { opacity: 1; transform: translateY(0); }
     from { opacity: 0; transform: translateY(20px); }
-  }
-  @keyframes bobble {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50%      { transform: translateX(-50%) translateY(8px); }
   }
 
   /* ══════════════════════════════════════════════════════
@@ -902,7 +907,7 @@
     .hamburger { display: flex; }
     .top-nav { padding: 0 1.2rem; }
     .nav-brand { font-size: .82rem; }
-    .hero { padding: 5rem 1.2rem 3rem; min-height: 90vh; }
+    .hero { padding: 5rem 1.2rem 3rem; min-height: 80vh; }
     .intro-band { padding: 0 1.2rem; font-size: 1.05rem; margin: 3rem auto; }
     .intro-band p:first-letter { font-size: 2.8rem; }
     .toc { padding: 2rem 1.2rem; margin: 3rem auto 4rem; }
