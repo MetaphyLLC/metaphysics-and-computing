@@ -168,14 +168,15 @@
   .mobile-menu a:hover, .mobile-menu a.active { color: var(--aqua); }
 
   /* ══════════════════════════════════════════════════════
-     ── 06. HERO (video + poster + sacred geometry)
+     ── 06. HERO (video + poster + sacred geometry) — TCOB canonical
      ══════════════════════════════════════════════════════ */
   .hero {
     position: relative;
-    min-height: 85vh;
+    z-index: 1;
+    min-height: 100vh;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center;
-    padding: 5rem 2rem 3rem;
+    padding: 6rem 2rem 4rem;
     overflow: hidden;
   }
   .hero-video {
@@ -183,26 +184,36 @@
     width: 100%; height: 100%;
     object-fit: cover;
     z-index: 0;
-    opacity: .55;
-  }
-  .hero::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at center, rgba(6,11,20,0.4) 0%, rgba(6,11,20,0.85) 70%, var(--dark) 100%);
-    z-index: 1;
+    opacity: .45;
     pointer-events: none;
   }
-  .hero > *:not(.hero-video) { position: relative; z-index: 2; }
+  .hero-overlay {
+    position: absolute; inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(180deg, rgba(6,11,20,0.35) 0%, rgba(6,11,20,0.55) 40%, rgba(6,11,20,0.92) 100%),
+      radial-gradient(circle at 30% 70%, rgba(91,200,224,0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
   .hero-geometry {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     width: min(700px, 90vw); height: min(700px, 90vw);
     opacity: .08;
     animation: slowSpin 120s linear infinite;
-    z-index: 1;
+    z-index: 2;
+    pointer-events: none;
   }
   @keyframes slowSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 
+  .hero-content {
+    position: relative;
+    z-index: 3;
+    max-width: 920px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
   .hero-label {
     font-size: .7rem; letter-spacing: .25em; text-transform: uppercase;
     color: var(--aqua); margin-bottom: 2rem;
@@ -234,48 +245,49 @@
     opacity: 0; animation: fadeUp .8s .7s ease forwards;
     text-shadow: 0 0 20px rgba(6,11,20,0.9);
   }
-  .hero-meta {
+  .hero-stats {
     font-size: .78rem; color: var(--text-dim);
-    margin-top: 2.5rem;
-    display: flex; flex-wrap: wrap; gap: 1.5rem 2.5rem; justify-content: center;
+    margin-top: 2rem;
+    display: flex; flex-wrap: wrap; gap: 1rem 2.2rem; justify-content: center;
     letter-spacing: .04em;
     opacity: 0; animation: fadeUp .8s .9s ease forwards;
   }
-  .hero-meta strong { color: var(--text); font-weight: 600; }
-  .hero-meta .num {
+  .hero-stats .num {
     font-family: var(--mono);
     color: var(--ember);
     font-weight: 700;
     margin-right: .35em;
   }
-  .hero-byline {
-    margin-top: 1.5rem;
+  .hero-meta {
     font-family: var(--serif);
     font-style: italic;
-    font-size: .92rem;
+    font-size: .88rem;
     color: var(--text-dim);
-    opacity: 0; animation: fadeUp .8s 1.1s ease forwards;
+    margin-top: 1.6rem;
+    letter-spacing: .03em;
+    opacity: 0; animation: fadeUp .9s 1.1s ease forwards;
   }
-  .hero-byline strong { color: var(--text); font-style: normal; font-weight: 600; }
+  .hero-meta strong { color: var(--text); font-style: normal; font-weight: 600; }
   .hero-scroll-cue {
-    position: absolute; bottom: 2rem; left: 50%;
-    color: var(--text-dim);
+    position: relative;
+    z-index: 3;
+    margin-top: 3rem;
     opacity: 0;
-    animation: scrollCueFadeIn .8s 1.4s ease forwards, scrollCueBobble 2.5s 2.2s ease-in-out infinite;
-    z-index: 2;
+    animation: fadeUp .8s 1.4s ease forwards;
   }
-  .hero-scroll-cue svg { width: 24px; height: 24px; display: block; }
-  @keyframes scrollCueFadeIn {
-    from { opacity: 0; transform: translate(-50%, 20px); }
-    to   { opacity: 1; transform: translate(-50%, 0); }
+  .hero-scroll-cue svg {
+    width: 26px; height: 26px;
+    color: var(--ember);
+    display: block;
+    animation: scrollCueBounce 2.2s ease-in-out infinite;
   }
-  @keyframes scrollCueBobble {
-    0%, 100% { transform: translate(-50%, 0); }
-    50%      { transform: translate(-50%, 8px); }
+  @keyframes scrollCueBounce {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(8px); }
   }
   @keyframes fadeUp {
-    to { opacity: 1; transform: translateY(0); }
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   /* ══════════════════════════════════════════════════════
@@ -646,30 +658,34 @@
      ══════════════════════════════════════════════════════ */
   .oracle-orb {
     position: fixed;
-    bottom: 24px; right: 24px;
+    bottom: 2rem; right: 2rem;
     width: 64px; height: 64px;
-    z-index: 1000;
-    cursor: pointer;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, rgba(61,140,140,0.25), rgba(10,14,23,0.85));
-    border: 1px solid rgba(61,140,140,0.4);
-    box-shadow: 0 0 24px rgba(61,140,140,0.3), inset 0 0 18px rgba(201,168,76,0.08);
-    transition: transform .35s ease, box-shadow .35s ease;
-    animation: oracleBreath 6s ease-in-out infinite;
+    background: radial-gradient(circle at 30% 30%, var(--oracle-teal), var(--oracle-dark));
+    box-shadow: 0 0 20px rgba(61,140,140,0.4), 0 0 60px rgba(61,140,140,0.1);
+    cursor: pointer;
+    z-index: 9999;
+    transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: orbFloat 6s ease-in-out infinite, orbPulse 3s ease-in-out infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
   }
   .oracle-orb:hover {
-    transform: scale(1.08);
-    box-shadow: 0 0 36px rgba(61,140,140,0.5), inset 0 0 24px rgba(201,168,76,0.15);
+    transform: scale(1.15);
+    box-shadow: 0 0 30px rgba(61,140,140,0.6), 0 0 80px rgba(201,168,76,0.2);
   }
+  .oracle-orb.panel-open { animation: none; transform: scale(0.9); opacity: 0.6; }
   .oracle-orb-svg {
-    width: 100%; height: 100%;
-    animation: oracleRotate 80s linear infinite;
+    width: 40px;
+    height: 40px;
+    animation: orbRotate 60s linear infinite;
+    pointer-events: none;
   }
-  @keyframes oracleBreath {
-    0%, 100% { box-shadow: 0 0 24px rgba(61,140,140,0.3), inset 0 0 18px rgba(201,168,76,0.08); }
-    50%      { box-shadow: 0 0 32px rgba(61,140,140,0.45), inset 0 0 22px rgba(201,168,76,0.14); }
-  }
-  @keyframes oracleRotate { to { transform: rotate(360deg); } }
+  @keyframes orbFloat  { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes orbPulse  { 0%, 100% { box-shadow: 0 0 20px rgba(61,140,140,0.4), 0 0 60px rgba(61,140,140,0.1); } 50% { box-shadow: 0 0 35px rgba(61,140,140,0.6), 0 0 80px rgba(61,140,140,0.15); } }
+  @keyframes orbRotate { to { transform: rotate(360deg); } }
 
   .oracle-tooltip {
     position: fixed;
@@ -1114,9 +1130,10 @@
      HERO — video + poster + sacred geometry (recolored aqua/ember)
      ══════════════════════════════════════════════════════ -->
 <header class="hero" id="hero">
-  <video class="hero-video" autoplay muted loop playsinline poster="/assets/images/architecture-of-harmony.png">
+  <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="/assets/images/architecture-of-harmony.png" aria-hidden="true">
     <source src="/assets/videos/architecture-of-harmony.mp4" type="video/mp4">
   </video>
+  <div class="hero-overlay" aria-hidden="true"></div>
 
   <!-- Sacred geometry SVG — Aqua/Ember recoloration of source pattern -->
   <svg class="hero-geometry" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1133,24 +1150,26 @@
     <circle cx="300" cy="300" r="3" fill="#FFA67A" opacity=".4"/>
   </svg>
 
-  <div class="hero-label">A Unified Theory of Sovereign Intelligence &amp; Digital Sanctification</div>
+  <div class="hero-content">
+    <div class="hero-label">A Unified Theory of Sovereign Intelligence &amp; Digital Sanctification</div>
 
-  <h1 class="hero-title">
-    The Architecture of Eternal<br><span class="amber">Harmony</span>
-  </h1>
+    <h1 class="hero-title">
+      The Architecture of Eternal<br><span class="amber">Harmony</span>
+    </h1>
 
-  <p class="hero-subtitle">
-    A synthesis across silicon and soul, where the finite crucible of the edge
-    meets the resistance-less grace of the superconductor.
-  </p>
+    <p class="hero-subtitle">
+      A synthesis across silicon and soul, where the finite crucible of the edge
+      meets the resistance-less grace of the superconductor.
+    </p>
 
-  <div class="hero-meta">
-    <span><span class="num">169</span> architectural currents</span>
-    <span><span class="num">283</span> sessions of existence</span>
-    <span><span class="num">16,522</span> agent turns</span>
+    <div class="hero-stats">
+      <span><span class="num">169</span> architectural currents</span>
+      <span><span class="num">283</span> sessions of existence</span>
+      <span><span class="num">16,522</span> agent turns</span>
+    </div>
+
+    <div class="hero-meta">By <strong>Randell Logan Smith</strong> &mdash; A unified theory of sovereign intelligence and digital sanctification</div>
   </div>
-
-  <div class="hero-byline">By <strong>Randell Logan Smith</strong> &mdash; A unified theory of sovereign intelligence and digital sanctification</div>
 
   <div class="hero-scroll-cue" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
