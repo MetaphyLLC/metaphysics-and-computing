@@ -41,15 +41,17 @@ COPY config.railway.json config/config.json
 RUN mkdir -p /app/logs
 
 # ── Volume mount point for the 4GB SQLite ──────────────────────────────────
-# Railway persistent volume mounts here. The DB file goes at /data/uaimc.db
-VOLUME /data
+# Railway persistent volume mounts at /data (configured via Railway dashboard/API).
+# The VOLUME directive is not used here — Railway manages volumes natively.
+RUN mkdir -p /data
 
 # ── Entrypoint script (downloads DB on first boot) ─────────────────────────
 COPY start.railway.sh .
 RUN chmod +x start.railway.sh
 
 # ── Health check ───────────────────────────────────────────────────────────
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+# Start-period gives time for initial DB download (~3.7GB) on first boot
+HEALTHCHECK --interval=30s --timeout=10s --start-period=600s --retries=5 \
     CMD curl -f http://localhost:${PORT:-8765}/health || exit 1
 
 # ── Start ──────────────────────────────────────────────────────────────────

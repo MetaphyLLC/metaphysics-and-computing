@@ -7,15 +7,11 @@ dockerfilePath = "Dockerfile.railway"
 
 [deploy]
 healthcheckPath = "/health"
-healthcheckTimeout = 10
+healthcheckTimeout = 900
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
 # Railway assigns $PORT automatically; uaimc_service.py reads it via os.environ
 # Internal URL for oracle-backend to reach this service:
 #   http://uaimc-lite.railway.internal:$PORT
-
-[deploy.volumes]
-# Persistent volume for the 4GB SQLite database
-# Mount path must match config.railway.json ramdisk.db_path
-"/data" = "uaimc_data"
+# Volume "/data" is managed via Railway API (volumeCreate), not via toml.
