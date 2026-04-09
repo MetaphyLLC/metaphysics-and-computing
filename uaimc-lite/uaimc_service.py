@@ -555,7 +555,7 @@ class ConnectionPool:
     )
 
     def __init__(self, db_path: str, size: int = 4):
-        effective_size = size if _GPU_ENABLED else min(size, 4)
+        effective_size = size if _GPU_ENABLED else min(size, 8)  # Railway: 8 (1 query + 4 scoring + 3 spare)
         pragmas = self._PRAGMAS if _GPU_ENABLED else self._PRAGMAS_LITE
         self._pool: queue.Queue[sqlite3.Connection] = queue.Queue(maxsize=effective_size)
         self._size = effective_size
@@ -607,7 +607,7 @@ class UnifiedMemory:
         if _GPU_ENABLED:
             self.db.execute("PRAGMA optimize")          # OPT-011: Re-analyze table statistics (skip on read-only)
         self._write_lock = threading.Lock()  # B10: serialize writes
-        _pool_size = 16 if _GPU_ENABLED else 4  # OPT-009: smaller pool on Railway
+        _pool_size = 16 if _GPU_ENABLED else 8  # Railway: 8 (avoids deadlock: 1 query + 4 scoring prefetch)
         self._pool = ConnectionPool(db_path, size=_pool_size)
         if _GPU_ENABLED:
             self._init_schema()
