@@ -401,13 +401,13 @@ class ForceSimulation {
     this.edges = [];       // [{source, target, restLength, springK}]
     this.nodeMap = new Map();
     this.connectedNodes = new Set(); // nodes with at least one edge
-    this.repulsion = 1500;
-    this.damping = 0.92;
-    this.centerGravity = 0.012;
+    this.repulsion = 200;
+    this.damping = 0.88;
+    this.centerGravity = 0.15;
     this.theta = 0.7;      // Barnes-Hut approximation ratio
     this.active = true;
-    this.maxVelocity = 8;  // velocity cap per axis
-    this.boundaryRadius = 180; // soft boundary sphere
+    this.maxVelocity = 20;  // velocity cap per axis
+    this.boundaryRadius = 60; // soft boundary sphere
     this._age = 0;         // simulation age in seconds (for cooling)
     this._tmpVec = { x: 0, y: 0, z: 0 };
   }
@@ -455,9 +455,9 @@ class ForceSimulation {
     dt = Math.min(dt, 0.033); // Cap dt to prevent spiral of death
     this._age += dt;
 
-    // Cooling: high damping early, settles to target over 4 seconds
-    const coolProgress = Math.min(1, this._age / 4);
-    const effectiveDamping = 0.99 - (0.99 - this.damping) * coolProgress;
+    // Cooling: moderate damping early, settles to target over 2 seconds
+    const coolProgress = Math.min(1, this._age / 2);
+    const effectiveDamping = 0.94 - (0.94 - this.damping) * coolProgress;
 
     // Reset forces
     for (let i = 0; i < this.nodes.length; i++) {
@@ -624,8 +624,8 @@ class ForceSimulation {
   _computeGravity() {
     const g = this.centerGravity;
     for (const n of this.nodes) {
-      // Disconnected nodes get 5x stronger gravity to stay in the neighborhood
-      const mult = this.connectedNodes.has(n.id) ? 1 : 5;
+      // Disconnected nodes get 10x stronger gravity to stay in the cluster
+      const mult = this.connectedNodes.has(n.id) ? 1 : 10;
       n.fx -= n.x * g * n.mass * mult;
       n.fy -= n.y * g * n.mass * mult;
       n.fz -= n.z * g * n.mass * mult;
