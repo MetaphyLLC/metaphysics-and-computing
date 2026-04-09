@@ -4739,24 +4739,27 @@ async def lifespan(app: FastAPI):
     logger.info(f"UAIMC Service starting on {HOST}:{PORT}")
     logger.info(f"Database: {DB_PATH}")
     mem = get_memory()  # Force init
-    mem._cleanup_ppr_cache()  # Phase 2: clear stale PPR cache on startup
+    if _GPU_ENABLED:
+        mem._cleanup_ppr_cache()  # Phase 2: clear stale PPR cache on startup
     if BACKUP_INTERVAL > 0:
         _backup_task = asyncio.create_task(auto_backup_loop())
     else:
         logger.info("Auto-backup task skipped (interval_seconds=0)")
     _bg_stats_task = asyncio.create_task(_background_stats_loop())  # OPT-024
 
-    # Start file watcher
-    watcher_config = CONFIG.get("file_watcher", {})
-    if watcher_config.get("enabled", False):
-        try:
-            _file_watcher = uaimc_watcher.UAIMCFileWatcher(watcher_config, mem.store)
-            _file_watcher.start()
-        except Exception as e:
-            logger.error(f"File watcher failed to start: {e}")
+    # Start file watcher (skip on Railway — read-only)
+    if _GPU_ENABLED:
+        watcher_config = CONFIG.get("file_watcher", {})
+        if watcher_config.get("enabled", False):
+            try:
+                _file_watcher = uaimc_watcher.UAIMCFileWatcher(watcher_config, mem.store)
+                _file_watcher.start()
+            except Exception as e:
+                logger.error(f"File watcher failed to start: {e}")
 
-    # Check scheduled reminders
-    _check_scheduled_reminders(mem)
+    # Check scheduled reminders (skip on Railway — writes to DB)
+    if _GPU_ENABLED:
+        _check_scheduled_reminders(mem)
 
     # Initialize Guardian AI (B-004) — own connection to avoid blocking event loop
     global _guardian
