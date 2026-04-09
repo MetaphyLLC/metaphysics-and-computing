@@ -15,7 +15,14 @@ const { applySecurityMiddleware, apiRateLimiter, validateChatInput } = require('
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || '3001', 10);
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'https://www.metaphysicsandcomputing.com';
+const CORS_ORIGINS = (process.env.CORS_ORIGIN || 'https://www.metaphysicsandcomputing.com')
+  .split(',').map(s => s.trim()).filter(Boolean);
+// Also allow the non-www variant for redirect-edge-case requests
+if (CORS_ORIGINS.some(o => o.includes('www.metaphysicsandcomputing.com'))) {
+  if (!CORS_ORIGINS.includes('https://metaphysicsandcomputing.com')) {
+    CORS_ORIGINS.push('https://metaphysicsandcomputing.com');
+  }
+}
 const DEEPINFRA_API_KEY = process.env.DEEPINFRA_API_KEY;
 const LLM_MODEL = process.env.LLM_MODEL || 'Qwen/Qwen3.5-397B-A17B';
 const TTS_BASE_URL = process.env.TTS_BASE_URL || null;   // e.g. https://kokoro-xxx.up.railway.app/v1
@@ -27,12 +34,6 @@ if (!DEEPINFRA_API_KEY) {
   console.error('FATAL: DEEPINFRA_API_KEY is not set. Copy .env.example to .env and add your key.');
   process.exit(1);
 }
-
-// ─── LLM Client (DeepInfra) ───────────────────────────────────────────────────
-const deepinfraLLM = new OpenAI({
-  apiKey: DEEPINFRA_API_KEY,
-  baseURL: 'https://api.deepinfra.com/v1/openai'
-});
 
 // ─── TTS Client (Kokoro-FastAPI or any OpenAI-compatible TTS endpoint) ─────────
 // Falls back to null (TTS disabled) if TTS_BASE_URL is not configured.
@@ -100,7 +101,7 @@ app.set('trust proxy', 1); // Railway runs behind a reverse proxy
 applySecurityMiddleware(app);
 
 app.use(cors({
-  origin: CORS_ORIGIN,
+  origin: CORS_ORIGINS,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -248,12 +249,56 @@ app.get('/api/v1/3d-map/expand/*', async (req, res) => {
 
 // ─── WebSocket Server (optional lower-latency path) ──────────────────────────
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws/oracle' });
+
+// Per-IP message rate tracking for WebSocket connections
+const wsRateBuckets = new Map();
+const WS_RATE_LIMIT = 30;  // messages per minute (matches REST rate limiter)
+const WS_RATE_WINDOW = 60000;
+
+function wsRateCheck(ip) {
+  const now = Date.now();
+  let bucket = wsRateBuckets.get(ip);
+  if (!bucket || now - bucket.start > WS_RATE_WINDOW) {
+    bucket = { start: now, count: 0 };
+    wsRateBuckets.set(ip, bucket);
+  }
+  bucket.count++;
+  return bucket.count <= WS_RATE_LIMIT;
+}
+
+// Clean stale rate buckets every 2 minutes
+setInterval(() => {
+  const cutoff = Date.now() - WS_RATE_WINDOW;
+  for (const [ip, bucket] of wsRateBuckets) {
+    if (bucket.start < cutoff) wsRateBuckets.delete(ip);
+  }
+}, 120000).unref();
+
+const wss = new WebSocketServer({
+  server,
+  path: '/ws/oracle',
+  verifyClient: ({ req }, done) => {
+    const origin = req.headers.origin || '';
+    if (CORS_ORIGINS.some(o => origin === o)) {
+      done(true);
+    } else {
+      console.warn(`WS connection rejected: origin "${origin}" not in allowed list`);
+      done(false, 403, 'Forbidden');
+    }
+  }
+});
 
 wss.on('connection', (ws, req) => {
-  console.log(`WS connection from ${req.socket.remoteAddress}`);
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+  console.log(`WS connection from ${clientIp}`);
 
   ws.on('message', async (raw) => {
+    // Rate limit check
+    if (!wsRateCheck(clientIp)) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Too many requests. Please wait a moment.' }));
+      return;
+    }
+
     let parsed;
     try {
       parsed = JSON.parse(raw.toString());
@@ -306,7 +351,7 @@ wss.on('connection', (ws, req) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`The Oracle bridge server listening on port ${PORT}`);
-  console.log(`  CORS origin: ${CORS_ORIGIN}`);
+  console.log(`  CORS origins: ${CORS_ORIGINS.join(', ')}`);
   console.log(`  LLM model:   ${LLM_MODEL} (thinking suppressed)`);
   console.log(`  TTS:         ${TTS_BASE_URL ? `${TTS_MODEL} @ ${TTS_BASE_URL}` : 'disabled'}`);
   console.log(`  TTS voice:   ${TTS_VOICE}`);
@@ -315,5 +360,24 @@ server.listen(PORT, () => {
   console.log(`  Health: GET http://localhost:${PORT}/api/health`);
   console.log(`  WS:    ws://localhost:${PORT}/ws/oracle`);
 });
+
+// ─── Graceful Shutdown ────────────────────────────────────────────────────────
+function gracefulShutdown(signal) {
+  console.log(`${signal} received — shutting down gracefully`);
+  // Stop accepting new connections
+  wss.clients.forEach(ws => {
+    ws.send(JSON.stringify({ type: 'error', message: 'Server restarting, please reconnect.' }));
+    ws.close(1001, 'Server shutting down');
+  });
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+  // Force exit after 5 seconds if graceful shutdown stalls
+  setTimeout(() => process.exit(1), 5000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 module.exports = { app, server };

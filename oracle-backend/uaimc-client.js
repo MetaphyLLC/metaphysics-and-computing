@@ -54,7 +54,8 @@ async function ingestConversation(messages, sessionId) {
     keepalive: true
   });
 
-  if (!resp.ok) {
+  if (!resp.ok && resp.status !== 405 && resp.status !== 501) {
+    // Suppress warnings for 405/501 — UAIMC-lite in query_only mode rejects writes by design
     console.warn(`UAIMC ingest failed: ${resp.status}`);
   }
 }
