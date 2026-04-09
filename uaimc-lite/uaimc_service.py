@@ -4779,32 +4779,36 @@ async def lifespan(app: FastAPI):
             logger.error(f"Guardian AI init failed: {e}")
             _guardian = None
 
-    # Phase 5: Cache warming — pre-populate context for top-N agents
-    try:
-        _warm_n = 3
-        _warm_rows = mem.db.execute(
-            "SELECT agent_name, COUNT(*) as cnt FROM agent_activity GROUP BY agent_name ORDER BY cnt DESC LIMIT ?",
-            (_warm_n,)
-        ).fetchall()
-        _warm_agents = [r[0] for r in _warm_rows if r[0]]
-        if _warm_agents:
-            for _wa in _warm_agents:
-                try:
-                    mem.get_context_for_prompt(agent=_wa, topic="", max_chars=CONTEXT_LIMIT)
-                except Exception as _we:
-                    logger.warning("Cache warming failed for agent %s: %s", _wa, _we)
-            logger.info("Phase 5 cache warming: pre-warmed %d agents: %s", len(_warm_agents), _warm_agents)
-        else:
-            logger.info("Phase 5 cache warming: no agents found in agent_activity")
-    except Exception as e:
-        logger.warning("Phase 5 cache warming failed (non-fatal): %s", e)
+    # Phase 5: Cache warming — moved to background task to avoid blocking startup
+    async def _deferred_cache_warming():
+        """Run cache warming after server starts accepting requests."""
+        await asyncio.sleep(2)  # Let health check pass first
+        try:
+            _warm_n = 3
+            _warm_rows = mem.db.execute(
+                "SELECT agent_name, COUNT(*) as cnt FROM agent_activity GROUP BY agent_name ORDER BY cnt DESC LIMIT ?",
+                (_warm_n,)
+            ).fetchall()
+            _warm_agents = [r[0] for r in _warm_rows if r[0]]
+            if _warm_agents:
+                for _wa in _warm_agents:
+                    try:
+                        await asyncio.to_thread(mem.get_context_for_prompt, agent=_wa, topic="", max_chars=CONTEXT_LIMIT)
+                    except Exception as _we:
+                        logger.warning("Cache warming failed for agent %s: %s", _wa, _we)
+                logger.info("Phase 5 cache warming: pre-warmed %d agents: %s", len(_warm_agents), _warm_agents)
+            else:
+                logger.info("Phase 5 cache warming: no agents found in agent_activity")
+        except Exception as e:
+            logger.warning("Phase 5 cache warming failed (non-fatal): %s", e)
+        # Phase 6: Bootstrap agent topic priors
+        try:
+            priors = await asyncio.to_thread(mem.get_agent_topic_priors)
+            logger.info("Phase 6 agent topic priors: loaded for %d agents", len(priors))
+        except Exception as e:
+            logger.warning("Phase 6 topic priors bootstrap failed (non-fatal): %s", e)
 
-    # Phase 6: Bootstrap agent topic priors on startup
-    try:
-        priors = mem.get_agent_topic_priors()
-        logger.info("Phase 6 agent topic priors: loaded for %d agents", len(priors))
-    except Exception as e:
-        logger.warning("Phase 6 topic priors bootstrap failed (non-fatal): %s", e)
+    asyncio.create_task(_deferred_cache_warming())
 
     yield
     logger.info("UAIMC Service shutting down...")
