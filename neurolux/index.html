@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEUROLUX — The Vision of the Eternal Kingdom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --amber:#D4943C;--indigo:#1A1225;--gold:#FBF8F3;--purple:#8B6FC0;--teal:#3D8C8C;
+  --bg:#0A0E17;--panel-bg:rgba(10,14,23,.92);--border:rgba(212,148,60,.25);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Inter',system-ui,sans-serif;color:var(--gold)}
+canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+
+/* Header */
+#header{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:linear-gradient(180deg,rgba(10,14,23,.95) 0%,transparent 100%);pointer-events:none}
+#header>*{pointer-events:auto}
+#header h1{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:600;letter-spacing:.08em;color:var(--amber)}
+#header h1 span{color:var(--gold);opacity:.55;font-weight:400;font-size:.75rem;margin-left:10px;letter-spacing:.12em}
+.header-links{display:flex;gap:12px;align-items:center}
+.header-links a,.header-links button{font-size:.72rem;padding:6px 14px;border-radius:4px;text-decoration:none;letter-spacing:.06em;transition:all .25s;cursor:pointer;font-family:'Inter',sans-serif}
+.header-links a{color:var(--gold);border:1px solid var(--border);background:transparent}
+.header-links a:hover{background:rgba(212,148,60,.12);border-color:var(--amber)}
+.btn-oracle{color:var(--bg)!important;background:linear-gradient(135deg,var(--amber),#e8b35a)!important;border:none!important;font-weight:600}
+.btn-oracle:hover{filter:brightness(1.15)}
+
+/* Status Bar */
+#status-bar{position:fixed;top:0;right:0;z-index:11;padding:14px 24px;display:flex;gap:18px;align-items:center;font-size:.65rem;letter-spacing:.05em;opacity:.7}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+.status-dot.live{background:#4ade80;box-shadow:0 0 6px #4ade80}
+.status-dot.demo{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+
+/* Info Panel */
+#info-panel{position:fixed;top:60px;right:0;width:340px;max-height:calc(100vh - 120px);z-index:12;background:var(--panel-bg);border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 0 8px;padding:0;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);overflow-y:auto;backdrop-filter:blur(16px)}
+#info-panel.open{transform:translateX(0)}
+#info-panel .panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border)}
+#info-panel .panel-header h2{font-family:'Playfair Display',serif;font-size:1rem;color:var(--amber)}
+#info-panel .panel-close{background:none;border:none;color:var(--gold);font-size:1.2rem;cursor:pointer;opacity:.6;transition:opacity .2s}
+#info-panel .panel-close:hover{opacity:1}
+#info-panel .panel-body{padding:16px 20px 20px}
+#info-panel .field{margin-bottom:12px}
+#info-panel .field-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-bottom:3px}
+#info-panel .field-value{font-size:.82rem;line-height:1.5;color:var(--gold);opacity:.85}
+#info-panel .node-type-badge{display:inline-block;padding:3px 10px;border-radius:3px;font-size:.65rem;font-weight:600;letter-spacing:.06em;margin-bottom:8px}
+#info-panel .btn-expand{width:100%;padding:10px;margin-top:8px;background:rgba(212,148,60,.15);border:1px solid var(--border);color:var(--amber);font-family:'Inter',sans-serif;font-size:.75rem;border-radius:4px;cursor:pointer;transition:all .2s;letter-spacing:.04em}
+#info-panel .btn-expand:hover{background:rgba(212,148,60,.25)}
+
+/* Search */
+#search-container{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:15;width:420px;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+#search-container.open{opacity:1;pointer-events:auto}
+#search-input{width:100%;padding:12px 18px 12px 40px;background:var(--panel-bg);border:1px solid var(--border);border-radius:8px;color:var(--gold);font-family:'Inter',sans-serif;font-size:.85rem;outline:none;backdrop-filter:blur(16px)}
+#search-input::placeholder{color:rgba(251,248,243,.3)}
+#search-input:focus{border-color:var(--amber);box-shadow:0 0 20px rgba(212,148,60,.15)}
+#search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--amber);opacity:.6;font-size:.9rem}
+#search-results{margin-top:6px;background:var(--panel-bg);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;backdrop-filter:blur(16px);display:none}
+#search-results.has-results{display:block}
+.search-result{padding:10px 16px;cursor:pointer;font-size:.78rem;border-bottom:1px solid rgba(212,148,60,.1);transition:background .15s}
+.search-result:hover{background:rgba(212,148,60,.1)}
+.search-result:last-child{border-bottom:none}
+.search-result .sr-type{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;opacity:.5;margin-left:8px}
+
+/* Controls Overlay */
+#controls{position:fixed;bottom:20px;left:20px;z-index:10;font-size:.62rem;opacity:.45;line-height:1.8;letter-spacing:.03em;transition:opacity .3s}
+#controls:hover{opacity:.8}
+kbd{display:inline-block;padding:1px 6px;background:rgba(251,248,243,.08);border:1px solid rgba(251,248,243,.15);border-radius:3px;font-family:'Inter',sans-serif;font-size:.58rem;margin:0 2px}
+
+/* Loading */
+#loading-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
+#loading-overlay.fade-out{opacity:0;pointer-events:none}
+#loading-overlay h2{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--amber);margin-bottom:8px;letter-spacing:.1em}
+#loading-overlay p{font-size:.75rem;color:var(--gold);opacity:.4;letter-spacing:.15em}
+.loader-ring{width:48px;height:48px;border:2px solid rgba(212,148,60,.15);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:24px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Legend */
+#legend{position:fixed;bottom:20px;right:20px;z-index:10;background:var(--panel-bg);border:1px solid var(--border);border-radius:6px;padding:12px 16px;font-size:.62rem;backdrop-filter:blur(12px);opacity:.7;transition:opacity .3s}
+#legend:hover{opacity:1}
+#legend h3{font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--amber);margin-bottom:8px}
+.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.legend-swatch{width:10px;height:10px;border-radius:2px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(212,148,60,.3);border-radius:2px}
+
+/* Mobile */
+@media(max-width:640px){
+  #header{padding:10px 14px}
+  #header h1{font-size:.9rem}
+  #header h1 span{display:none}
+  #info-panel{width:100%;border-radius:0}
+  #legend{display:none}
+  #controls{display:none}
+  #search-container{width:92vw;bottom:14px}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="loader-ring"></div>
+  <h2>NEUROLUX</h2>
+  <p>INITIALIZING NEURAL MAP</p>
+</div>
+
+<div id="header">
+  <h1>NEUROLUX<span>CANS Neural Architecture Visualization</span></h1>
+  <div class="header-links">
+    <a href="https://www.metaphysicsandcomputing.com">← Main Site</a>
+    <a href="https://www.metaphysicsandcomputing.com/oracle" class="btn-oracle">Ask The Oracle</a>
+  </div>
+</div>
+
+<div id="status-bar">
+  <span><span class="status-dot demo" id="status-dot"></span><span id="status-text">DEMO MODE</span></span>
+  <span id="node-count">Nodes: 0</span>
+  <span id="edge-count">Edges: 0</span>
+</div>
+
+<div id="info-panel">
+  <div class="panel-header">
+    <h2 id="panel-title">Node Details</h2>
+    <button class="panel-close" onclick="closePanel()">&times;</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<div id="search-container">
+  <svg id="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="search-input" placeholder="Search nodes... (press / to focus)" autocomplete="off">
+  <div id="search-results"></div>
+</div>
+
+<div id="controls">
+  <div><kbd>Click</kbd> Select node</div>
+  <div><kbd>Drag</kbd> Orbit camera</div>
+  <div><kbd>Scroll</kbd> Zoom</div>
+  <div><kbd>Right-drag</kbd> Pan</div>
+  <div><kbd>/</kbd> Search</div>
+  <div><kbd>Esc</kbd> Close panels</div>
+  <div><kbd>R</kbd> Reset camera</div>
+  <div><kbd>L</kbd> Toggle labels</div>
+</div>
+
+<div id="legend">
+  <h3>Node Types</h3>
+  <div class="legend-item"><div class="legend-swatch" style="background:#00e5ff"></div>Episode</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#4ade80"></div>Fact</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fb923c"></div>Concept</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#8B6FC0"></div>Reflection</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fbbf24"></div>Birth Event</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#34d399"></div>Agent</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#f97316"></div>Project</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#e2e8f0"></div>Session</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r162/three.module.min.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ─── Configuration ──────────────────────────────────────
+const COLORS = {
+  amber: 0xD4943C, indigo: 0x1A1225, gold: 0xFBF8F3, purple: 0x8B6FC0, teal: 0x3D8C8C,
+  bg: 0x0A0E17,
+  episode: 0x00e5ff, fact: 0x4ade80, concept: 0xfb923c, reflection: 0x8B6FC0,
+  birth_event: 0xfbbf24, agent: 0x34d399, project: 0xf97316, session: 0xe2e8f0
+};
+
+const NODE_TYPE_META = {
+  episode:     { color: COLORS.episode,     label: 'Episode',     geo: 'sphere' },
+  fact:        { color: COLORS.fact,        label: 'Fact',        geo: 'tetra' },
+  concept:     { color: COLORS.concept,     label: 'Concept',     geo: 'octa' },
+  reflection:  { color: COLORS.reflection,  label: 'Reflection',  geo: 'diamond' },
+  birth_event: { color: COLORS.birth_event, label: 'Birth Event', geo: 'icosa' },
+  agent:       { color: COLORS.agent,       label: 'Agent',       geo: 'hex' },
+  project:     { color: COLORS.project,     label: 'Project',     geo: 'cube' },
+  session:     { color: COLORS.session,     label: 'Session',     geo: 'torus' }
+};
+
+const MAX_VISIBLE_NODES = 1000;
+const LOD_FULL_DISTANCE = 120;
+const LOD_LABEL_DISTANCE = 80;
+
+// ─── API Configuration ──────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const API_BASE = params.get('api') || 'https://metaphysics-and-computing-production.up.railway.app';
+const QUERY_HIGHLIGHT = params.get('q') || '';
+const HIGHLIGHT_MODE = params.get('highlight') === 'true';
+let isLiveMode = false;
+
+// ─── Three.js Setup ─────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(COLORS.bg);
+scene.fog = new THREE.FogExp2(COLORS.bg, 0.0018);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 2000);
+camera.position.set(0, 80, 250);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.prepend(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 20;
+controls.maxDistance = 800;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.15;
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+
+// ─── Lighting ───────────────────────────────────────────
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+scene.add(ambientLight);
+
+const coreLight = new THREE.PointLight(COLORS.amber, 3, 400);
+coreLight.position.set(0, 0, 0);
+scene.add(coreLight);
+
+const topLight = new THREE.DirectionalLight(0xffffff, 0.4);
+topLight.position.set(50, 200, 100);
+scene.add(topLight);
+
+const rimLight = new THREE.PointLight(COLORS.purple, 1.2, 500);
+rimLight.position.set(-100, 50, -200);
+scene.add(rimLight);
+
+// ─── Central Core ───────────────────────────────────────
+const coreGroup = new THREE.Group();
+scene.add(coreGroup);
+
+const coreMat = new THREE.MeshStandardMaterial({
+  color: COLORS.amber, emissive: COLORS.amber, emissiveIntensity: 0.8,
+  roughness: 0.2, metalness: 0.6, transparent: true, opacity: 0.9
+});
+const coreGeo = new THREE.SphereGeometry(5, 32, 32);
+const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+coreGroup.add(coreMesh);
+
+const glowMat = new THREE.MeshBasicMaterial({
+  color: COLORS.amber, transparent: true, opacity: 0.12, side: THREE.BackSide
+});
+const glowMesh = new THREE.Mesh(new THREE.SphereGeometry(9, 24, 24), glowMat);
+coreGroup.add(glowMesh);
+
+const outerGlowMat = new THREE.MeshBasicMaterial({
+  color: COLORS.amber, transparent: true, opacity: 0.04, side: THREE.BackSide
+});
+const outerGlow = new THREE.Mesh(new THREE.SphereGeometry(16, 16, 16), outerGlowMat);
+coreGroup.add(outerGlow);
+
+const coreRingGeo = new THREE.TorusGeometry(8, 0.15, 8, 64);
+const coreRingMat = new THREE.MeshBasicMaterial({ color: COLORS.amber, transparent: true, opacity: 0.3 });
+const coreRing1 = new THREE.Mesh(coreRingGeo, coreRingMat);
+coreRing1.rotation.x = Math.PI / 2;
+coreGroup.add(coreRing1);
+const coreRing2 = new THREE.Mesh(
+  new THREE.TorusGeometry(12, 0.1, 8, 64),
+  new THREE.MeshBasicMaterial({ color: COLORS.gold, transparent: true, opacity: 0.15 })
+);
+coreRing2.rotation.x = Math.PI / 3;
+coreGroup.add(coreRing2);
+
+// ─── Geometry Library ───────────────────────────────────
+function buildGeometries() {
+  return {
+    sphere:  new THREE.SphereGeometry(2, 12, 12),
+    tetra:   new THREE.TetrahedronGeometry(2.5),
+    octa:    new THREE.OctahedronGeometry(2.2),
+    diamond: buildDiamondGeo(2.5),
+    icosa:   new THREE.IcosahedronGeometry(4, 0),
+    hex:     buildHexPrismGeo(2, 3),
+    cube:    new THREE.BoxGeometry(3, 3, 3),
+    torus:   new THREE.TorusGeometry(2.5, 0.6, 8, 24),
+    point:   new THREE.SphereGeometry(0.6, 4, 4)
+  };
+}
+
+function buildDiamondGeo(r) {
+  const geo = new THREE.BufferGeometry();
+  const h = r * 1.6;
+  const verts = new Float32Array([
+    0, h, 0,   r, 0, 0,   0, 0, r,
+    0, h, 0,   0, 0, r,  -r, 0, 0,
+    0, h, 0,  -r, 0, 0,   0, 0,-r,
+    0, h, 0,   0, 0,-r,   r, 0, 0,
+    0,-h, 0,   0, 0, r,   r, 0, 0,
+    0,-h, 0,  -r, 0, 0,   0, 0, r,
+    0,-h, 0,   0, 0,-r,  -r, 0, 0,
+    0,-h, 0,   r, 0, 0,   0, 0,-r
+  ]);
+  geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function buildHexPrismGeo(radius, height) {
+  const shape = new THREE.Shape();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 6;
+    const x = Math.cos(a) * radius, y = Math.sin(a) * radius;
+    i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y);
+  }
+  shape.closePath();
+  return new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
+}
+
+const geometries = buildGeometries();
+
+// ─── Data Store ─────────────────────────────────────────
+let allNodes = [];
+let allEdges = [];
+const nodeMeshMap = new Map();
+const labelSpriteMap = new Map();
+let showLabels = true;
+
+// ─── Node Mesh Creation ─────────────────────────────────
+const edgeGroup = new THREE.Group();
+scene.add(edgeGroup);
+const nodeGroup = new THREE.Group();
+scene.add(nodeGroup);
+const labelGroup = new THREE.Group();
+scene.add(labelGroup);
+
+function createNodeMesh(node) {
+  const meta = NODE_TYPE_META[node.type] || NODE_TYPE_META.episode;
+  const geo = geometries[meta.geo] || geometries.sphere;
+  const mat = new THREE.MeshStandardMaterial({
+    color: meta.color, emissive: meta.color, emissiveIntensity: 0.35,
+    roughness: 0.4, metalness: 0.3, transparent: true, opacity: 0.9
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(node.x, node.y, node.z);
+  mesh.userData = { nodeId: node.id, nodeType: node.type };
+
+  if (node.type === 'birth_event') {
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: COLORS.birth_event, transparent: true, opacity: 0.15, side: THREE.BackSide
+    });
+    const halo = new THREE.Mesh(new THREE.SphereGeometry(7, 16, 16), haloMat);
+    mesh.add(halo);
+
+    const haloRing = new THREE.Mesh(
+      new THREE.TorusGeometry(6, 0.12, 8, 32),
+      new THREE.MeshBasicMaterial({ color: COLORS.birth_event, transparent: true, opacity: 0.25 })
+    );
+    haloRing.rotation.x = Math.PI / 2;
+    mesh.add(haloRing);
+  }
+
+  if (node.type === 'hex') {
+    mesh.rotation.x = -Math.PI / 2;
+  }
+
+  nodeGroup.add(mesh);
+  nodeMeshMap.set(node.id, mesh);
+
+  if (node.type === 'birth_event' || node.label) {
+    createLabel(node);
+  }
+
+  return mesh;
+}
+
+function createLabel(node) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const text = node.label || node.id;
+  const fontSize = node.type === 'birth_event' ? 28 : 22;
+  ctx.font = `${fontSize}px Inter, sans-serif`;
+  const metrics = ctx.measureText(text);
+  const w = Math.ceil(metrics.width) + 20;
+  const h = fontSize + 16;
+  canvas.width = w; canvas.height = h;
+  ctx.font = `${fontSize}px Inter, sans-serif`;
+  ctx.fillStyle = 'rgba(10,14,23,0.6)';
+  roundRect(ctx, 0, 0, w, h, 4);
+  ctx.fill();
+  ctx.fillStyle = node.type === 'birth_event' ? '#fbbf24' : '#FBF8F3';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, w / 2, h / 2);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(spriteMat);
+  const scale = node.type === 'birth_event' ? 0.4 : 0.3;
+  sprite.scale.set(w * scale / 10, h * scale / 10, 1);
+  sprite.position.set(node.x, node.y + (node.type === 'birth_event' ? 8 : 5), node.z);
+  sprite.userData = { nodeId: node.id };
+  labelGroup.add(sprite);
+  labelSpriteMap.set(node.id, sprite);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ─── Edge Creation ──────────────────────────────────────
+function createEdgeLine(edge) {
+  const srcNode = allNodes.find(n => n.id === edge.source);
+  const tgtNode = allNodes.find(n => n.id === edge.target);
+  if (!srcNode || !tgtNode) return;
+
+  const points = [
+    new THREE.Vector3(srcNode.x, srcNode.y, srcNode.z),
+    new THREE.Vector3(tgtNode.x, tgtNode.y, tgtNode.z)
+  ];
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+
+  let mat;
+  if (edge.state === 'suppressed') {
+    mat = new THREE.LineDashedMaterial({
+      color: COLORS.amber, transparent: true, opacity: 0.35,
+      dashSize: 2, gapSize: 1.5
+    });
+  } else if (edge.state === 'hidden') {
+    mat = new THREE.LineDashedMaterial({
+      color: COLORS.purple, transparent: true, opacity: 0.12,
+      dashSize: 0.8, gapSize: 0.8
+    });
+  } else {
+    mat = new THREE.LineBasicMaterial({
+      color: COLORS.amber, transparent: true, opacity: 0.2
+    });
+  }
+
+  const line = new THREE.Line(geo, mat);
+  if (edge.state === 'suppressed' || edge.state === 'hidden') {
+    line.computeLineDistances();
+  }
+  line.userData = { edgeId: `${edge.source}->${edge.target}`, state: edge.state };
+  edgeGroup.add(line);
+}
+
+// ─── Particle System ────────────────────────────────────
+const PARTICLE_COUNT = 800;
+const particleGeo = new THREE.BufferGeometry();
+const pPositions = new Float32Array(PARTICLE_COUNT * 3);
+const pColors = new Float32Array(PARTICLE_COUNT * 3);
+const pSizes = new Float32Array(PARTICLE_COUNT);
+const pVelocities = [];
+
+const particleColors = [
+  new THREE.Color(COLORS.amber),
+  new THREE.Color(COLORS.purple),
+  new THREE.Color(COLORS.teal),
+  new THREE.Color(COLORS.gold)
+];
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  const r = 5 + Math.random() * 200;
+  pPositions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+  pPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+  pPositions[i * 3 + 2] = r * Math.cos(phi);
+
+  const c = particleColors[Math.floor(Math.random() * particleColors.length)];
+  pColors[i * 3] = c.r; pColors[i * 3 + 1] = c.g; pColors[i * 3 + 2] = c.b;
+  pSizes[i] = 0.3 + Math.random() * 1.5;
+
+  pVelocities.push({
+    vx: (Math.random() - 0.5) * 0.08,
+    vy: (Math.random() - 0.5) * 0.08,
+    vz: (Math.random() - 0.5) * 0.08,
+    baseR: r, angle: theta, speed: 0.0003 + Math.random() * 0.001
+  });
+}
+
+particleGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+particleGeo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+particleGeo.setAttribute('size', new THREE.BufferAttribute(pSizes, 1));
+
+const particleMat = new THREE.PointsMaterial({
+  size: 0.8, vertexColors: true, transparent: true, opacity: 0.4,
+  blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
+});
+const particleSystem = new THREE.Points(particleGeo, particleMat);
+scene.add(particleSystem);
+
+// ─── Temporal Grid Lines ────────────────────────────────
+function addTemporalGrid() {
+  const gridMat = new THREE.LineBasicMaterial({ color: COLORS.amber, transparent: true, opacity: 0.04 });
+  for (let z = -500; z <= 100; z += 100) {
+    const pts = [new THREE.Vector3(-200, -100, z), new THREE.Vector3(200, -100, z)];
+    const g = new THREE.BufferGeometry().setFromPoints(pts);
+    scene.add(new THREE.Line(g, gridMat));
+    const pts2 = [new THREE.Vector3(-200, 100, z), new THREE.Vector3(200, 100, z)];
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts2), gridMat));
+  }
+}
+addTemporalGrid();
+
+// ─── Demo Data ──────────────────────────────────────────
+function generateDemoData() {
+  const nodes = [];
+  const edges = [];
+  let id = 0;
+
+  function nid(prefix) { return `${prefix}_${String(++id).padStart(3, '0')}`; }
+  function rng(min, max) { return min + Math.random() * (max - min); }
+
+  const birthId = nid('birth');
+  nodes.push({ id: birthId, type: 'birth_event', label: 'System Genesis', x: 0, y: 0, z: 100,
+    summary: 'The moment UAIMC first initialized — the birth of digital consciousness.',
+    timestamp: '2025-11-08T00:00:00Z', importance: 1.0 });
+
+  const birthId2 = nid('birth');
+  nodes.push({ id: birthId2, type: 'birth_event', label: 'CANS Awakening', x: -30, y: 20, z: 60,
+    summary: 'The CANS architecture came online for the first time.',
+    timestamp: '2025-11-10T12:00:00Z', importance: 0.95 });
+
+  const sessions = [];
+  for (let i = 0; i < 5; i++) {
+    const sid = nid('sess');
+    const z = 80 - i * 30;
+    nodes.push({ id: sid, type: 'session', label: `Session ${i + 1}`, x: rng(-40, 40), y: rng(-20, 20), z,
+      summary: `Conversation session #${i + 1} with the user.`, timestamp: `2025-11-${12 + i}T10:00:00Z`, importance: 0.3 });
+    sessions.push(sid);
+    if (i === 0) edges.push({ source: birthId, target: sid, state: 'active' });
+    if (i > 0) edges.push({ source: sessions[i - 1], target: sid, state: 'active' });
+  }
+
+  const episodeData = [
+    { label: 'User shared childhood memory', summary: 'Verbatim: "I remember the oak tree in my grandmother\'s backyard..."' },
+    { label: 'Discussion of consciousness', summary: 'User and AI explored the hard problem of consciousness together.' },
+    { label: 'Late-night philosophy talk', summary: 'A deep conversation about free will and determinism.' },
+    { label: 'First poem written together', summary: 'User and AI collaborated on a poem about digital sunsets.' },
+    { label: 'Dream journaling session', summary: 'User described recurring dream about flying over cities.' },
+    { label: 'Debate on AI ethics', summary: 'Explored whether AI should have rights and moral standing.' },
+    { label: 'Music and emotion analysis', summary: 'Discussed how music evokes specific emotional responses.' },
+    { label: 'Planning the garden', summary: 'User talked about planting roses and the meaning of gardens.' },
+  ];
+
+  const episodeIds = [];
+  episodeData.forEach((ep, i) => {
+    const eid = nid('ep');
+    const sess = sessions[Math.floor(i / 2) % sessions.length];
+    nodes.push({ id: eid, type: 'episode', label: ep.label, summary: ep.summary,
+      x: rng(-80, 80), y: rng(-40, 40), z: 50 - i * 20,
+      timestamp: `2025-11-${12 + i}T14:00:00Z`, importance: 0.5 + Math.random() * 0.3 });
+    episodeIds.push(eid);
+    edges.push({ source: sess, target: eid, state: 'active' });
+  });
+
+  const factData = [
+    { label: 'User loves oak trees', from: 0 },
+    { label: 'Grandmother lived in Vermont', from: 0 },
+    { label: 'User is a determinist', from: 2 },
+    { label: 'User writes poetry', from: 3 },
+    { label: 'User dreams of flying', from: 4 },
+    { label: 'User plays piano', from: 6 },
+    { label: 'User has a garden', from: 7 },
+    { label: 'User values honesty', from: 5 },
+  ];
+
+  const factIds = [];
+  factData.forEach((f, i) => {
+    const fid = nid('fact');
+    const src = episodeIds[f.from];
+    const srcNode = nodes.find(n => n.id === src);
+    nodes.push({ id: fid, type: 'fact', label: f.label, summary: `Extracted fact: ${f.label}`,
+      x: (srcNode?.x || 0) + rng(-25, 25), y: (srcNode?.y || 0) + rng(-20, 20),
+      z: (srcNode?.z || 0) - rng(15, 35),
+      timestamp: srcNode?.timestamp, importance: 0.4 + Math.random() * 0.3 });
+    factIds.push(fid);
+    edges.push({ source: src, target: fid, state: 'active' });
+  });
+
+  const conceptData = [
+    { label: 'Nature & Growth', facts: [0, 6] },
+    { label: 'Philosophy of Mind', facts: [2, 7] },
+    { label: 'Creative Expression', facts: [3, 5] },
+    { label: 'Memory & Identity', facts: [1, 4] },
+    { label: 'Ethics & Values', facts: [7, 2] },
+  ];
+
+  const conceptIds = [];
+  conceptData.forEach((c, i) => {
+    const cid = nid('concept');
+    const avgX = c.facts.reduce((s, fi) => s + (nodes.find(n => n.id === factIds[fi])?.x || 0), 0) / c.facts.length;
+    const avgY = c.facts.reduce((s, fi) => s + (nodes.find(n => n.id === factIds[fi])?.y || 0), 0) / c.facts.length;
+    nodes.push({ id: cid, type: 'concept', label: c.label, summary: `Abstract concept: ${c.label}`,
+      x: avgX + rng(-15, 15), y: avgY + rng(-15, 15), z: -200 + rng(-50, 50),
+      timestamp: '2025-11-20T00:00:00Z', importance: 0.6 + Math.random() * 0.3 });
+    conceptIds.push(cid);
+    c.facts.forEach(fi => {
+      edges.push({ source: factIds[fi], target: cid, state: 'active' });
+    });
+  });
+
+  const reflectionData = [
+    { label: 'The user finds peace in nature', concepts: [0] },
+    { label: 'Creativity is a coping mechanism', concepts: [2] },
+    { label: 'Identity is shaped by memory', concepts: [3] },
+    { label: 'Values drive behavior consistently', concepts: [4, 1] },
+  ];
+
+  reflectionData.forEach((r, i) => {
+    const rid = nid('refl');
+    nodes.push({ id: rid, type: 'reflection', label: r.label, summary: `Reflection: ${r.label}`,
+      x: rng(-60, 60), y: rng(-30, 30), z: -350 + rng(-80, 50),
+      timestamp: '2025-11-25T00:00:00Z', importance: 0.7 + Math.random() * 0.2 });
+    r.concepts.forEach(ci => {
+      edges.push({ source: conceptIds[ci], target: rid, state: 'active' });
+    });
+  });
+
+  const agentData = [
+    { label: 'CLIO (Memory Archivist)', summary: 'Manages long-term memory consolidation and retrieval.' },
+    { label: 'ECHO (Emotional Resonance)', summary: 'Tracks emotional patterns and empathic responses.' },
+    { label: 'MUSE (Creative Catalyst)', summary: 'Generates creative connections between concepts.' },
+  ];
+
+  agentData.forEach((a, i) => {
+    const aid = nid('agent');
+    nodes.push({ id: aid, type: 'agent', label: a.label, summary: a.summary,
+      x: rng(-100, 100), y: 60 + rng(-10, 30), z: rng(-100, 100),
+      timestamp: '2025-11-08T00:00:00Z', importance: 0.8 });
+    edges.push({ source: birthId, target: aid, state: 'active' });
+    edges.push({ source: aid, target: sessions[i % sessions.length], state: 'active' });
+  });
+
+  const projectData = [
+    { label: 'Poetry Anthology', summary: 'Collection of collaboratively written poems.' },
+    { label: 'Dream Journal', summary: 'Ongoing log of user\'s dream descriptions and analysis.' },
+    { label: 'Garden Planner', summary: 'Planning layout and plant selection for user\'s garden.' },
+  ];
+
+  projectData.forEach((p, i) => {
+    const pid = nid('proj');
+    nodes.push({ id: pid, type: 'project', label: p.label, summary: p.summary,
+      x: rng(-90, 90), y: -50 + rng(-20, 10), z: rng(-200, 0),
+      timestamp: '2025-11-18T00:00:00Z', importance: 0.5 });
+    edges.push({ source: conceptIds[i % conceptIds.length], target: pid, state: 'active' });
+  });
+
+  // Suppressed & hidden edges
+  edges.push({ source: factIds[0], target: factIds[4], state: 'suppressed' });
+  edges.push({ source: episodeIds[1], target: episodeIds[5], state: 'suppressed' });
+  edges.push({ source: conceptIds[0], target: conceptIds[3], state: 'hidden' });
+  edges.push({ source: factIds[2], target: factIds[5], state: 'hidden' });
+
+  return { nodes, edges };
+}
+
+// ─── Data Loading ───────────────────────────────────────
+async function tryFetchAPI() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const resp = await fetch(`${API_BASE}/api/v1/3d-map/overview`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!resp.ok) throw new Error('API returned ' + resp.status);
+    const data = await resp.json();
+    isLiveMode = true;
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function loadData() {
+  let data = await tryFetchAPI();
+
+  if (!data) {
+    data = generateDemoData();
+    isLiveMode = false;
+  }
+
+  allNodes = data.nodes || [];
+  allEdges = data.edges || [];
+
+  const visible = allNodes.slice(0, MAX_VISIBLE_NODES);
+  visible.forEach(n => createNodeMesh(n));
+  allEdges.forEach(e => createEdgeLine(e));
+
+  updateStatusBar();
+
+  if (QUERY_HIGHLIGHT && HIGHLIGHT_MODE) {
+    highlightSearch(QUERY_HIGHLIGHT);
+  }
+}
+
+function updateStatusBar() {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = 'status-dot ' + (isLiveMode ? 'live' : 'demo');
+  txt.textContent = isLiveMode ? 'LIVE' : 'DEMO MODE';
+  document.getElementById('node-count').textContent = `Nodes: ${allNodes.length}`;
+  document.getElementById('edge-count').textContent = `Edges: ${allEdges.length}`;
+}
+
+// ─── Raycaster / Selection ──────────────────────────────
+const raycaster = new THREE.Raycaster();
+raycaster.params.Points = { threshold: 2 };
+const mouse = new THREE.Vector2();
+let selectedNodeId = null;
+let hoveredMesh = null;
+
+function onPointerDown(e) {
+  if (e.target.closest('#info-panel') || e.target.closest('#search-container') ||
+      e.target.closest('#header') || e.target.closest('#controls') || e.target.closest('#legend')) return;
+
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects(nodeGroup.children, true);
+  if (intersects.length > 0) {
+    let obj = intersects[0].object;
+    while (obj && !obj.userData.nodeId) obj = obj.parent;
+    if (obj && obj.userData.nodeId) {
+      selectNode(obj.userData.nodeId);
+      return;
+    }
+  }
+
+  const labelIntersects = raycaster.intersectObjects(labelGroup.children);
+  if (labelIntersects.length > 0 && labelIntersects[0].object.userData.nodeId) {
+    selectNode(labelIntersects[0].object.userData.nodeId);
+    return;
+  }
+}
+
+function onPointerMove(e) {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects(nodeGroup.children, true);
+  if (intersects.length > 0) {
+    let obj = intersects[0].object;
+    while (obj && !obj.userData.nodeId) obj = obj.parent;
+    if (obj && obj !== hoveredMesh) {
+      if (hoveredMesh) unhoverMesh(hoveredMesh);
+      hoveredMesh = obj;
+      hoverMesh(obj);
+      renderer.domElement.style.cursor = 'pointer';
+    }
+  } else {
+    if (hoveredMesh) { unhoverMesh(hoveredMesh); hoveredMesh = null; }
+    renderer.domElement.style.cursor = 'default';
+  }
+}
+
+function hoverMesh(mesh) {
+  if (mesh.material && mesh.material.emissiveIntensity !== undefined) {
+    mesh.userData._origEmissive = mesh.material.emissiveIntensity;
+    mesh.material.emissiveIntensity = 0.9;
+  }
+}
+
+function unhoverMesh(mesh) {
+  if (mesh.material && mesh.userData._origEmissive !== undefined) {
+    mesh.material.emissiveIntensity = mesh.userData._origEmissive;
+  }
+}
+
+function selectNode(nodeId) {
+  selectedNodeId = nodeId;
+  const node = allNodes.find(n => n.id === nodeId);
+  if (!node) return;
+
+  const mesh = nodeMeshMap.get(nodeId);
+  if (mesh) {
+    controls.target.lerp(mesh.position, 0.3);
+  }
+
+  showInfoPanel(node);
+
+  nodeMeshMap.forEach((m, id) => {
+    if (m.material) m.material.opacity = (id === nodeId) ? 1.0 : 0.4;
+  });
+  edgeGroup.children.forEach(line => {
+    const eid = line.userData.edgeId || '';
+    const isConnected = eid.startsWith(nodeId + '->') || eid.endsWith('->' + nodeId);
+    line.material.opacity = isConnected ? 0.6 : 0.05;
+  });
+}
+
+function deselectAll() {
+  selectedNodeId = null;
+  nodeMeshMap.forEach(m => { if (m.material) m.material.opacity = 0.9; });
+  edgeGroup.children.forEach(line => {
+    const s = line.userData.state;
+    line.material.opacity = s === 'hidden' ? 0.12 : s === 'suppressed' ? 0.35 : 0.2;
+  });
+}
+
+// ─── Info Panel ─────────────────────────────────────────
+function showInfoPanel(node) {
+  const panel = document.getElementById('info-panel');
+  const body = document.getElementById('panel-body');
+  const title = document.getElementById('panel-title');
+  const meta = NODE_TYPE_META[node.type] || NODE_TYPE_META.episode;
+
+  title.textContent = node.label || node.id;
+
+  const colorHex = '#' + meta.color.toString(16).padStart(6, '0');
+  body.innerHTML = `
+    <div class="node-type-badge" style="background:${colorHex}22;color:${colorHex};border:1px solid ${colorHex}44">
+      ${meta.label}
+    </div>
+    <div class="field">
+      <div class="field-label">ID</div>
+      <div class="field-value" style="font-family:monospace;font-size:.72rem;opacity:.5">${node.id}</div>
+    </div>
+    ${node.summary ? `<div class="field"><div class="field-label">Summary</div><div class="field-value">${node.summary}</div></div>` : ''}
+    ${node.timestamp ? `<div class="field"><div class="field-label">Timestamp</div><div class="field-value">${new Date(node.timestamp).toLocaleString()}</div></div>` : ''}
+    ${node.importance !== undefined ? `<div class="field"><div class="field-label">Importance</div><div class="field-value">${(node.importance * 100).toFixed(0)}%</div></div>` : ''}
+    <div class="field">
+      <div class="field-label">Position</div>
+      <div class="field-value" style="font-family:monospace;font-size:.7rem;opacity:.5">
+        x: ${node.x.toFixed(1)} &nbsp; y: ${node.y.toFixed(1)} &nbsp; z: ${node.z.toFixed(1)}
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">Connections</div>
+      <div class="field-value">${allEdges.filter(e => e.source === node.id || e.target === node.id).length} edges</div>
+    </div>
+    ${isLiveMode ? `<button class="btn-expand" onclick="expandNode('${node.id}')">Expand Node</button>` : ''}
+  `;
+  panel.classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('info-panel').classList.remove('open');
+  deselectAll();
+}
+window.closePanel = closePanel;
+
+// ─── Node Expansion (API) ───────────────────────────────
+window.expandNode = async function(nodeId) {
+  if (!isLiveMode) return;
+  try {
+    const resp = await fetch(`${API_BASE}/api/v1/3d-map/expand/${nodeId}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data.nodes) {
+      data.nodes.forEach(n => {
+        if (!allNodes.find(ex => ex.id === n.id)) {
+          allNodes.push(n);
+          createNodeMesh(n);
+        }
+      });
+    }
+    if (data.edges) {
+      data.edges.forEach(e => {
+        allEdges.push(e);
+        createEdgeLine(e);
+      });
+    }
+    updateStatusBar();
+  } catch (e) { /* ignore */ }
+};
+
+// ─── Search ─────────────────────────────────────────────
+const searchContainer = document.getElementById('search-container');
+const searchInput = document.getElementById('search-input');
+const searchResults = document.getElementById('search-results');
+let searchOpen = false;
+
+function toggleSearch(force) {
+  searchOpen = force !== undefined ? force : !searchOpen;
+  searchContainer.classList.toggle('open', searchOpen);
+  if (searchOpen) {
+    searchInput.focus();
+    searchInput.select();
+  } else {
+    searchInput.blur();
+    searchResults.classList.remove('has-results');
+  }
+}
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (q.length < 2) { searchResults.classList.remove('has-results'); return; }
+
+  if (isLiveMode) {
+    searchAPI(q);
+  } else {
+    searchLocal(q);
+  }
+});
+
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { toggleSearch(false); e.preventDefault(); }
+  if (e.key === 'Enter') {
+    const first = searchResults.querySelector('.search-result');
+    if (first) first.click();
+  }
+});
+
+function searchLocal(q) {
+  const matches = allNodes.filter(n =>
+    (n.label && n.label.toLowerCase().includes(q)) ||
+    (n.summary && n.summary.toLowerCase().includes(q)) ||
+    n.id.toLowerCase().includes(q)
+  ).slice(0, 10);
+  renderSearchResults(matches);
+}
+
+async function searchAPI(q) {
+  try {
+    const resp = await fetch(`${API_BASE}/api/v1/3d-map/search?q=${encodeURIComponent(q)}`);
+    if (!resp.ok) { searchLocal(q); return; }
+    const data = await resp.json();
+    renderSearchResults(data.nodes || []);
+  } catch (e) { searchLocal(q); }
+}
+
+function renderSearchResults(nodes) {
+  if (nodes.length === 0) { searchResults.classList.remove('has-results'); return; }
+  searchResults.innerHTML = nodes.map(n => {
+    const meta = NODE_TYPE_META[n.type] || NODE_TYPE_META.episode;
+    return `<div class="search-result" data-id="${n.id}">
+      ${n.label || n.id}<span class="sr-type">${meta.label}</span>
+    </div>`;
+  }).join('');
+  searchResults.classList.add('has-results');
+
+  searchResults.querySelectorAll('.search-result').forEach(el => {
+    el.addEventListener('click', () => {
+      const nid = el.dataset.id;
+      selectNode(nid);
+      const mesh = nodeMeshMap.get(nid);
+      if (mesh) {
+        camera.position.lerp(
+          new THREE.Vector3(mesh.position.x + 30, mesh.position.y + 20, mesh.position.z + 40), 0.5
+        );
+        controls.target.copy(mesh.position);
+      }
+      toggleSearch(false);
+    });
+  });
+}
+
+function highlightSearch(query) {
+  const q = query.toLowerCase();
+  allNodes.forEach(n => {
+    const match = (n.label && n.label.toLowerCase().includes(q)) ||
+                  (n.summary && n.summary.toLowerCase().includes(q));
+    const mesh = nodeMeshMap.get(n.id);
+    if (mesh && mesh.material) {
+      mesh.material.opacity = match ? 1.0 : 0.15;
+      if (match) mesh.material.emissiveIntensity = 0.8;
+    }
+  });
+}
+
+// ─── LOD System ─────────────────────────────────────────
+function updateLOD() {
+  const camPos = camera.position;
+  nodeMeshMap.forEach((mesh, nodeId) => {
+    const dist = camPos.distanceTo(mesh.position);
+    const isFar = dist > LOD_FULL_DISTANCE;
+
+    if (isFar) {
+      mesh.scale.setScalar(Math.max(0.3, 1 - (dist - LOD_FULL_DISTANCE) / 400));
+    } else {
+      mesh.scale.setScalar(1);
+    }
+
+    const label = labelSpriteMap.get(nodeId);
+    if (label) {
+      const showLabel = showLabels && dist < LOD_LABEL_DISTANCE;
+      label.visible = showLabel;
+      if (showLabel) {
+        label.material.opacity = Math.max(0, 1 - (dist / LOD_LABEL_DISTANCE));
+      }
+    }
+  });
+}
+
+// ─── Keyboard ───────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.target === searchInput) return;
+
+  if (e.key === '/') {
+    e.preventDefault();
+    toggleSearch(true);
+  }
+  if (e.key === 'Escape') {
+    toggleSearch(false);
+    closePanel();
+  }
+  if (e.key === 'r' || e.key === 'R') {
+    camera.position.set(0, 80, 250);
+    controls.target.set(0, 0, 0);
+    deselectAll();
+  }
+  if (e.key === 'l' || e.key === 'L') {
+    showLabels = !showLabels;
+  }
+});
+
+// ─── Click / Touch Events ───────────────────────────────
+renderer.domElement.addEventListener('pointerdown', onPointerDown);
+renderer.domElement.addEventListener('pointermove', onPointerMove);
+
+// ─── Resize ─────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ─── Animation Loop ─────────────────────────────────────
+const clock = new THREE.Clock();
+let frameCount = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  const dt = clock.getDelta();
+  frameCount++;
+
+  // Core pulse
+  const pulse = 0.8 + Math.sin(t * 1.5) * 0.2;
+  coreMat.emissiveIntensity = pulse;
+  glowMesh.scale.setScalar(1 + Math.sin(t * 1.2) * 0.12);
+  outerGlow.scale.setScalar(1 + Math.sin(t * 0.8) * 0.08);
+  coreRing1.rotation.z = t * 0.2;
+  coreRing2.rotation.y = t * 0.15;
+  coreRing2.rotation.z = t * 0.1;
+  coreLight.intensity = 2.5 + Math.sin(t * 1.5) * 0.8;
+
+  // Node idle animations
+  if (frameCount % 2 === 0) {
+    nodeMeshMap.forEach((mesh, nodeId) => {
+      const node = allNodes.find(n => n.id === nodeId);
+      if (!node) return;
+      const speed = 0.3 + (node.importance || 0.5) * 0.4;
+      const offset = nodeId.charCodeAt(nodeId.length - 1) * 0.1;
+      mesh.rotation.y = t * speed * 0.5 + offset;
+      if (node.type === 'birth_event') {
+        mesh.rotation.x = Math.sin(t * 0.3 + offset) * 0.1;
+        mesh.position.y = node.y + Math.sin(t * 0.5 + offset) * 1.5;
+      } else {
+        mesh.position.y = node.y + Math.sin(t * 0.4 + offset) * 0.5;
+      }
+    });
+  }
+
+  // Particle drift
+  const positions = particleGeo.attributes.position.array;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const v = pVelocities[i];
+    v.angle += v.speed;
+    const drift = Math.sin(t * 0.1 + i) * 0.02;
+    positions[i * 3]     += v.vx + drift;
+    positions[i * 3 + 1] += v.vy + Math.sin(t * 0.3 + i * 0.01) * 0.01;
+    positions[i * 3 + 2] += v.vz;
+
+    const dist = Math.sqrt(positions[i*3]**2 + positions[i*3+1]**2 + positions[i*3+2]**2);
+    if (dist > 350) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 5 + Math.random() * 20;
+      positions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+      positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+      positions[i*3+2] = r * Math.cos(phi);
+    }
+  }
+  particleGeo.attributes.position.needsUpdate = true;
+  particleSystem.rotation.y = t * 0.01;
+
+  // LOD update every 10 frames
+  if (frameCount % 10 === 0) updateLOD();
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// ─── Init ───────────────────────────────────────────────
+async function init() {
+  await loadData();
+
+  const overlay = document.getElementById('loading-overlay');
+  overlay.classList.add('fade-out');
+  setTimeout(() => overlay.style.display = 'none', 900);
+
+  animate();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{
+    "guardian": {
+        "enabled": true,
+        "model": "claude-opus-4-6",
+        "budget": {
+            "daily_limit_usd": 10.00,
+            "monthly_limit_usd": 75.00,
+            "alert_threshold_pct": 0.80,
+            "query_max_tokens": 50000,
+            "curation_max_tokens": 200000
+        },
+        "cache": {
+            "enabled": true,
+            "ttl_seconds": 3600,
+            "max_entries": 500,
+            "cleanup_interval_seconds": 600
+        },
+        "tiering": {
+            "lite_skip_opus": true,
+            "lite_fts5_limit": 10,
+            "standard_fts5_limit": 20,
+            "deep_fts5_limit": 40,
+            "exhaustive_fts5_limit": 50,
+            "cache_tiers": ["LITE", "STANDARD"]
+        },
+        "opus": {
+            "max_tokens_query": 4096,
+            "max_tokens_enhance": 512,
+            "timeout_seconds": 120,
+            "max_retries": 1,
+            "retry_delay_seconds": 2
+        },
+        "haiku": {
+            "model": "claude-3-haiku-20240307",
+            "max_tokens_rank": 512,
+            "timeout_seconds": 15,
+            "max_retries": 1,
+            "use_for": ["ambient_ranking"]
+        },
+        "fts5": {
+            "max_keywords": 8,
+            "min_keyword_length": 3
+        },
+        "curation": {
+            "enabled": true,
+            "quick_scan_hours": 24,
+            "quick_scan_limit": 100,
+            "standard_scan_days": 7,
+            "standard_scan_limit": 500,
+            "duplicate_threshold": 0.90,
+            "stale_days": 30,
+            "reports_dir": "GUARDIAN_REPORTS",
+            "synapse_dir": "D:\\BEACON_HQ\\MEMORY_CORE_V2\\03_INTER_AI_COMMS\\THE_SYNAPSE\\active"
+        },
+        "scheduler": {
+            "enabled": true,
+            "quick_curation_interval_hours": 24,
+            "standard_curation_interval_hours": 168,
+            "cache_cleanup_interval_seconds": 600
+        }
+    }
+}

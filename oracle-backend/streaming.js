@@ -4,7 +4,9 @@
 // Handles abbreviations poorly intentionally — simplicity > perfection for TTS chunking
 const SENTENCE_BOUNDARY = /^(.*?[.!?])\s+(.*)/s;
 // Minimum sentence length to avoid TTS calls on tiny fragments
-const MIN_SENTENCE_CHARS = 8;
+const MIN_SENTENCE_CHARS = 4;
+const FLUSH_TIMEOUT_MS = 2000;
+const FLUSH_WORD_COUNT = 30;
 
 /**
  * Normalize text before sending to TTS.
@@ -49,6 +51,35 @@ function stripThinkingFromBuffer(buffer) {
 }
 
 /**
+ * Attempt TTS with a single retry on failure.
+ * @param {Object} client - OpenAI-compatible TTS client
+ * @param {string} model - TTS model name
+ * @param {string} voice - TTS voice name
+ * @param {string} text - Text to synthesize
+ * @returns {Promise<{success: boolean, data?: string, message?: string}>}
+ */
+async function attemptTts(client, model, voice, text) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const audio = await client.audio.speech.create({
+        model,
+        voice,
+        input: normalizeTtsText(text),
+        response_format: 'mp3'
+      });
+      const audioBuffer = Buffer.from(await audio.arrayBuffer());
+      return { success: true, data: audioBuffer.toString('base64') };
+    } catch (err) {
+      if (attempt === 0) {
+        console.warn(`TTS attempt 1 failed, retrying: ${err.message}`);
+        continue;
+      }
+      return { success: false, message: err.message };
+    }
+  }
+}
+
+/**
  * Sentence-buffered streaming pipeline.
  * Consumes an LLM stream, detects sentence boundaries,
  * calls TTS on each sentence, and yields NDJSON events.
@@ -56,6 +87,9 @@ function stripThinkingFromBuffer(buffer) {
  * Uses stateful thinking-block detection: content inside <think>...</think>
  * is discarded in real time as chunks arrive, so the sentence buffer only
  * ever sees clean response text.
+ *
+ * Includes timeout flush (2s) and word-count flush (30 words) to ensure
+ * the user sees text quickly even when sentences are long.
  *
  * Yields objects:
  *   { type: 'text',  content: string }
@@ -70,6 +104,7 @@ function stripThinkingFromBuffer(buffer) {
 async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'af_bella', ttsModel = 'kokoro') {
   let outputBuffer = '';  // Accumulated clean text, ready for sentence detection
   let inThinking = false; // Whether we're currently inside a <think> block
+  let lastYieldTime = Date.now();
 
   for await (const chunk of llmStream) {
     const rawContent = chunk.choices[0]?.delta?.content || '';
@@ -121,21 +156,48 @@ async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'af_bella',
 
       // Yield text immediately — client renders text before audio arrives
       yield { type: 'text', content: sentence };
+      lastYieldTime = Date.now();
 
-      // Generate TTS for this sentence (normalize before sending)
+      // Generate TTS with single retry on failure
       if (ttsClient) {
-        try {
-          const audio = await ttsClient.audio.speech.create({
-            model: ttsModel,
-            voice,
-            input: normalizeTtsText(sentence),
-            response_format: 'mp3'
-          });
-          const audioBuffer = Buffer.from(await audio.arrayBuffer());
-          yield { type: 'audio', data: audioBuffer.toString('base64') };
-        } catch (err) {
-          console.warn(`TTS failed for sentence: ${err.message}`);
-          yield { type: 'tts_error', message: err.message };
+        const result = await attemptTts(ttsClient, ttsModel, voice, sentence);
+        if (result.success) {
+          yield { type: 'audio', data: result.data };
+        } else {
+          yield { type: 'tts_error', message: result.message };
+        }
+      }
+    }
+
+    // Timeout flush: if buffer has content and 2s elapsed without yielding
+    const bufferWordCount = outputBuffer.trim().split(/\s+/).filter(Boolean).length;
+    if (outputBuffer.length > 20 && Date.now() - lastYieldTime > FLUSH_TIMEOUT_MS) {
+      const flushed = outputBuffer.trim();
+      outputBuffer = '';
+      yield { type: 'text', content: flushed };
+      lastYieldTime = Date.now();
+
+      if (ttsClient) {
+        const result = await attemptTts(ttsClient, ttsModel, voice, flushed);
+        if (result.success) {
+          yield { type: 'audio', data: result.data };
+        } else {
+          yield { type: 'tts_error', message: result.message };
+        }
+      }
+    } else if (bufferWordCount >= FLUSH_WORD_COUNT) {
+      // Word-count flush: too many words without a sentence boundary
+      const flushed = outputBuffer.trim();
+      outputBuffer = '';
+      yield { type: 'text', content: flushed };
+      lastYieldTime = Date.now();
+
+      if (ttsClient) {
+        const result = await attemptTts(ttsClient, ttsModel, voice, flushed);
+        if (result.success) {
+          yield { type: 'audio', data: result.data };
+        } else {
+          yield { type: 'tts_error', message: result.message };
         }
       }
     }
@@ -146,18 +208,11 @@ async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'af_bella',
   if (remaining.length >= MIN_SENTENCE_CHARS) {
     yield { type: 'text', content: remaining };
     if (ttsClient) {
-      try {
-        const audio = await ttsClient.audio.speech.create({
-          model: ttsModel,
-          voice,
-          input: normalizeTtsText(remaining),
-          response_format: 'mp3'
-        });
-        const audioBuffer = Buffer.from(await audio.arrayBuffer());
-        yield { type: 'audio', data: audioBuffer.toString('base64') };
-      } catch (err) {
-        console.warn(`TTS flush failed: ${err.message}`);
-        yield { type: 'tts_error', message: err.message };
+      const result = await attemptTts(ttsClient, ttsModel, voice, remaining);
+      if (result.success) {
+        yield { type: 'audio', data: result.data };
+      } else {
+        yield { type: 'tts_error', message: result.message };
       }
     }
   } else if (remaining.length > 0) {

@@ -457,6 +457,8 @@ html.scrollbar-visible::-webkit-scrollbar-thumb:hover {
   font-family: 'Inter', sans-serif; line-height: 1;
 }
 .oracle-header-controls button:hover { color: #E2E8F0; background: rgba(255,255,255,0.06); }
+.oracle-visualize { font-size: 1.1rem !important; }
+.oracle-visualize:hover { color: #C9A84C !important; }
 
 /* --- Messages Area --- */
 .oracle-messages {
@@ -1073,6 +1075,7 @@ class Oracle {
       <div class="oracle-header">
         <span class="oracle-title">\u2726 THE ORACLE</span>
         <div class="oracle-header-controls">
+          <button class="oracle-visualize" aria-label="Visualize in NEUROLUX" title="Open NEUROLUX Neural Map">\u2726</button>
           <button class="oracle-minimize" aria-label="Minimize">\u2500</button>
           <button class="oracle-close" aria-label="Close">\u2715</button>
         </div>
@@ -1112,6 +1115,9 @@ class Oracle {
     this._initSpeechRecognition();
     this._showFirstVisit();
 
+    // Periodic health re-check
+    setInterval(() => this._checkHealth(), 30000);
+
     // Welcome message
     this._appendMessage('ai', 'Welcome to Metaphysics and Computing. I\u2019m The Oracle \u2014 ask me anything about our research, our philosophy, or just have a conversation. I\u2019m here to help.');
   }
@@ -1124,6 +1130,17 @@ class Oracle {
     // Panel controls
     this.els.minimize.addEventListener('click', () => this.togglePanel());
     this.els.close.addEventListener('click', () => this.togglePanel());
+
+    // Visualize in NEUROLUX
+    const vizBtn = this.els.panel.querySelector('.oracle-visualize');
+    if (vizBtn) {
+      vizBtn.addEventListener('click', () => {
+        const lastUserMsg = this.messages.filter(m => m.role === 'user').pop();
+        const q = lastUserMsg ? encodeURIComponent(lastUserMsg.text) : '';
+        const url = q ? `/neurolux/?q=${q}&highlight=true` : '/neurolux/';
+        window.open(url, '_blank');
+      });
+    }
 
     // Text input
     this.els.textInput.addEventListener('input', () => {
@@ -1231,6 +1248,7 @@ class Oracle {
       thinkingEl.remove();
       let msgEl = null;
       let fullText = '';
+      let unspokenText = '';
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -1254,21 +1272,35 @@ class Oracle {
                 msgEl = this._appendMessage('ai', '', true);
               }
               fullText += data.content + ' ';
+              unspokenText += data.content + ' ';
               this._streamText(msgEl, data.content + ' ');
               this.setState('speaking');
             }
 
             if (data.type === 'audio' && data.data) {
               this._queueAudio(data.data);
+              unspokenText = '';
+            }
+
+            if (data.type === 'tts_error') {
+              if (unspokenText.trim()) {
+                this._speakFallback(unspokenText.trim());
+                unspokenText = '';
+              }
             }
 
             if (data.type === 'done') {
+              if (unspokenText.trim()) {
+                this._speakFallback(unspokenText.trim());
+                unspokenText = '';
+              }
               this._finalizeStream(msgEl);
             }
           } catch (e) { /* skip malformed lines */ }
         }
       }
 
+      if (unspokenText.trim()) this._speakFallback(unspokenText.trim());
       if (msgEl) this._finalizeStream(msgEl);
       if (!fullText) {
         this._appendMessage('ai', 'I received your message but had trouble forming a response. Please try again.');
@@ -1577,14 +1609,17 @@ class Oracle {
 
   /* ─── HEALTH CHECK ─── */
   async _checkHealth() {
-    try {
-      const res = await fetch(this.config.healthUrl, { signal: AbortSignal.timeout(3000) });
-      if (res.ok) {
-        this.backendAvailable = true;
-        this.setState('idle');
-        return;
-      }
-    } catch (e) {}
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(this.config.healthUrl, { signal: AbortSignal.timeout(3000) });
+        if (res.ok) {
+          this.backendAvailable = true;
+          this.setState('idle');
+          return;
+        }
+      } catch (e) {}
+      if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+    }
     this.backendAvailable = false;
     this.setState(this.config.enableMockMode ? 'idle' : 'offline');
     if (this.els.status) {
@@ -1617,7 +1652,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.oracle = new Oracle({
     restUrl: 'https://metaphysics-and-computing-production.up.railway.app/api/chat',
     healthUrl: 'https://metaphysics-and-computing-production.up.railway.app/api/health',
-    enableMockMode: false
+    enableMockMode: true
   });
   window.oracle.render();
 });

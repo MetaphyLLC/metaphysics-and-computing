@@ -1,0 +1,687 @@
+{
+  "pulse": {
+    "auth_token": null,
+    "_comment": "Set auth_token to a secret string to require authentication from non-localhost connections"
+  },
+  "service": {
+    "host": "127.0.0.1",
+    "port": 8765,
+    "log_level": "INFO"
+  },
+  "ramdisk": {
+    "drive_letter": "U",
+    "size_gb": 8,
+    "db_path": "D:\\BEACON_HQ\\PROJECTS\\00_ACTIVE\\UAIMC\\data\\uaimc.db",
+    "db_path_ramdisk": "U:\\uaimc\\uaimc.db"
+  },
+  "backup": {
+    "dir": "D:\\BEACON_HQ\\PROJECTS\\00_ACTIVE\\UAIMC\\backup",
+    "interval_seconds": 300,
+    "on_shutdown": true
+  },
+  "bch": {
+    "db_path": "D:\\BEACON_HQ\\PROJECTS\\00_ACTIVE\\BCH_APPS\\backend\\data\\comms.db",
+    "webhook_enabled": true
+  },
+  "gpu": {
+    "enabled": true,
+    "max_mb": 500,
+    "sync_interval_seconds": 30
+  },
+  "context": {
+    "default_token_budget": 4000,
+    "max_token_budget": 8000,
+    "recency_boost_24h": 2.0,
+    "recency_boost_7d": 1.5,
+    "cache_ttl_seconds": 60,
+    "max_cache_entries": 256,
+    "ambient_cache_ttl_seconds": 120,
+    "compression_level": 2,
+    "full_verbatim_pct": 0.3,
+    "summary_only_pct": 0.3,
+    "mid_truncate_chars": 100,
+    "agent_overrides": {
+      "FORGE": {
+        "compression_level": 1,
+        "full_verbatim_pct": 0.5,
+        "word_budget": 6000
+      },
+      "CLIO": {
+        "compression_level": 2,
+        "word_budget": 10000
+      },
+      "COPILOT_VSCODE": {
+        "compression_level": 2,
+        "word_budget": 10000
+      },
+      "AEGIS": {
+        "compression_level": 2,
+        "word_budget": 10000
+      },
+      "IRIS": {
+        "compression_level": 2,
+        "word_budget": 8000
+      },
+      "ORACLE": {
+        "compression_level": 2,
+        "word_budget": 4000,
+        "ppr_hops": 3,
+        "ppr_alpha": 0.10,
+        "ppr_weight": 0.4,
+        "cross_agent_blend": 0.25
+      }
+    },
+    "default_word_budget": 8000
+  },
+  "scoring": {
+    "coverage_floor": 0.15,
+    "recency_max_boost": 1.0,
+    "recency_half_life_hours": 48,
+    "topic_keyword_weight": 0.6,
+    "temporal_recent_signals": [
+      "current",
+      "latest",
+      "now",
+      "today",
+      "recent",
+      "status",
+      "update"
+    ],
+    "temporal_historical_signals": [
+      "original",
+      "first",
+      "history",
+      "foundation",
+      "origin",
+      "initial",
+      "when",
+      "earliest"
+    ],
+    "use_generated_at": true,
+    "neutral_decay_multiplier": 0.2,
+    "selection_signal_weights": {
+      "ranking_promoted": 0.3,
+      "curator_suggested": 0.5,
+      "user_selected": 1.0
+    },
+    "selection_decay_days": 30,
+    "heat_window_hours": 168,
+    "heat_decay_half_life_hours": 24,
+    "heat_boost_cap": 1.5,
+    "heat_source_weights": {
+      "query": 1.0,
+      "ingest": 0.5,
+      "selection": 2.0,
+      "session_start": 0.3
+    },
+    "discovery_bonus": 1.3,
+    "link_decay_per_hop": 0.5,
+    "graph_max_hops": 2,
+    "graph_link_overlap_threshold": 3,
+    "graph_link_weights": {
+      "shared_annotation": "proportional_to_overlap",
+      "same_project": 0.7,
+      "same_author": 0.5,
+      "referenced_in": 0.8,
+      "curator_linked": 0.9,
+      "session_adjacent": 0.4
+    },
+    "rejection_base_penalty": 0.1,
+    "rejection_half_life_days": 60,
+    "negation_floor": 0.2,
+    "disclosure_cohort_size": 3,
+    "ignore_fatigue_threshold": 5,
+    "soft_suppression_rejections": 3,
+    "sub_hidden_rejections": 5,
+    "once_thought_rejections": 10,
+    "length_norm_k": 0.15,
+    "bm25_enabled": true,
+    "bm25_k1": 1.5,
+    "bm25_b": 0.75,
+    "bm25_blend": 0.4,
+    "source_authority_weights": {
+      "memory_core": 1.2,
+      "active_project": 1.1,
+      "research": 1.15,
+      "session_log": 1.0,
+      "synapse": 1.05,
+      "conversation": 1.0,
+      "curation_report": 0.8,
+      "default": 1.0
+    },
+    "convergence_weights": {
+      "2": 1.0,
+      "3": 1.3,
+      "4": 1.7,
+      "5": 2.2
+    },
+    "convergence_enabled": true,
+    "convergence_thresholds": {
+      "dup": 4,
+      "merge": 3
+    },
+    "simhash_max_hamming": 6,
+    "simhash_top_k_tokens": 15,
+    "dedup_convergence_skip": 4,
+    "dedup_convergence_merge": 3,
+    "bloom_cascade_enabled": true,
+    "bloom_capacity": 200000,
+    "gpu_triad_enabled": true
+  },
+  "ambient": {
+    "enabled": true,
+    "default_token_budget": 500,
+    "max_token_budget": 1500,
+    "confidence_threshold": 0.3,
+    "max_results": 5,
+    "recent_activity_lookback": 5,
+    "compress_results": true,
+    "feedback_loop_prevention": true,
+    "escalation_threshold": 0.6,
+    "haiku_model": "claude-3-haiku-20240307",
+    "haiku_max_candidates": 20,
+    "haiku_daily_cap": 100,
+    "haiku_monthly_budget_usd": 5.0,
+    "haiku_cost_per_call": 0.001,
+    "cache_keywords": true,
+    "quality_filter": true,
+    "topic_relevance_boost": 1.3
+  },
+  "annotations": {
+    "max_per_event": 25,
+    "min_keyword_length": 3,
+    "max_keyword_length": 40,
+    "emotional_texture": true
+  },
+  "file_watcher": {
+    "enabled": true,
+    "debounce_seconds": 3.0,
+    "file_patterns": [
+      "*.md",
+      "*.json",
+      "*.txt",
+      "*.py",
+      "*.js",
+      "*.ts",
+      "*.tsx",
+      "*.jsx",
+      "*.html",
+      "*.css",
+      "*.yml",
+      "*.yaml",
+      "*.toml",
+      "*.cfg",
+      "*.ini",
+      "*.csv",
+      "*.xml",
+      "*.sh",
+      "*.ps1",
+      "*.bat",
+      "*.cmd",
+      "*.sql",
+      "*.rs",
+      "*.go",
+      "*.ipynb",
+      "*.env",
+      "*.conf",
+      "*.rst",
+      "*.mdx"
+    ],
+    "ignore_patterns": [
+      "*.tmp",
+      "*.swp",
+      "*.bak",
+      "*.pyc",
+      "*.pyo",
+      "*.min.js",
+      "*.min.css",
+      "*.map",
+      "*.d.ts",
+      "*.log",
+      "package-lock.json",
+      "yarn.lock",
+      "Cargo.lock",
+      "pnpm-lock.yaml",
+      "tsconfig.tsbuildinfo",
+      "mass_ingest_manifest.json",
+      "processed_files.json",
+      "node_modules/*",
+      "__pycache__/*",
+      ".git/*",
+      ".venv/*",
+      "venv/*",
+      "dist/*",
+      "build/*",
+      ".cache/*",
+      "site-packages/*",
+      "target/*",
+      ".mypy_cache/*",
+      ".pytest_cache/*",
+      ".next/*",
+      ".eggs/*"
+    ],
+    "exclude_dirs": [
+      "DAZ 3D",
+      ".conda",
+      "node_modules",
+      "__pycache__",
+      ".git",
+      ".venv",
+      "venv",
+      "dist",
+      "build",
+      ".cache",
+      "site-packages",
+      "target",
+      ".mypy_cache",
+      ".pytest_cache",
+      ".next",
+      ".eggs",
+      "deps",
+      ".tox",
+      ".nox"
+    ],
+    "source_routes": {
+      "MEMORY_CORE_V2": "memory_core",
+      "PROJECTS\\00_ACTIVE": "active_project",
+      "PROJECTS\\01_RESEARCH": "research",
+      "AutoProjects": "autoproject",
+      "DATA": "data",
+      "TOOLS": "tools",
+      "FINAI Hunter": "finai_hunter",
+      "THE_SYNAPSE": "synapse",
+      "Downloads": "downloads",
+      "GitHub": "github_reference",
+      "HMSS": "hmss",
+      "BCH_APPS": "bch",
+      "BCH_MOBILE": "bch_mobile",
+      "TROPHY_ROOM": "trophy_room",
+      "BACKUPS": "backups"
+    },
+    "use_native_observer": true,
+    "sweep_enabled": true,
+    "sweep_interval_minutes": 10,
+    "directories": [
+      {
+        "path": "D:\\BEACON_HQ",
+        "source": "beacon_hq",
+        "recursive": true
+      },
+      {
+        "path": "C:\\Users\\logan\\OneDrive\\Documents",
+        "source": "documents",
+        "recursive": true
+      },
+      {
+        "path": "C:\\Users\\logan\\Downloads",
+        "source": "downloads",
+        "recursive": true
+      },
+      {
+        "path": "C:\\Users\\logan\\OneDrive\\Desktop\\FINAI Hunter",
+        "source": "finai_hunter",
+        "recursive": true
+      }
+    ]
+  },
+  "tools": {
+    "autoproject_path": "C:\\Users\\logan\\OneDrive\\Documents\\AutoProjects",
+    "tier1": {
+      "EmotionalTextureAnalyzer": {
+        "enabled": true,
+        "purpose": "Emotional dimension annotations"
+      },
+      "HashGuard": {
+        "enabled": true,
+        "purpose": "Backup integrity verification"
+      },
+      "SQLSchemaDiff": {
+        "enabled": true,
+        "purpose": "Schema drift detection"
+      }
+    },
+    "tier2": {
+      "RegexLab": {
+        "enabled": false,
+        "purpose": "Debug annotation patterns"
+      },
+      "JSONQuery": {
+        "enabled": false,
+        "purpose": "Query annotation data"
+      },
+      "TextTransform": {
+        "enabled": false,
+        "purpose": "Format conversion utilities"
+      }
+    },
+    "production_polish": {
+      "ContextDecayMeter": {
+        "enabled": true,
+        "purpose": "Auto-summarize trigger"
+      },
+      "TokenTracker": {
+        "enabled": true,
+        "purpose": "Per-agent usage accounting"
+      },
+      "KnowledgeSync": {
+        "enabled": true,
+        "purpose": "Cross-agent knowledge graph"
+      },
+      "MCPBridge": {
+        "enabled": true,
+        "purpose": "MCP protocol discovery"
+      }
+    }
+  },
+  "mass_ingest": {
+    "roots": [
+      "D:\\BEACON_HQ",
+      "C:\\Users\\logan\\Downloads",
+      "C:\\Users\\logan\\OneDrive\\Desktop"
+    ],
+    "document_folders": [
+      "C:\\Users\\logan\\OneDrive\\Documents\\TEMP_OLD_SYSTEM_ANALYSIS",
+      "C:\\Users\\logan\\OneDrive\\Documents\\AI Hunting",
+      "C:\\Users\\logan\\OneDrive\\Documents\\AI-Universal-Memory-Core",
+      "C:\\Users\\logan\\OneDrive\\Documents\\AutoProjects",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Base Prime",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Cline",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Cursor",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Cursor_Workspace_Protocols",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_decompressed_v15.6_hash_lz77",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_decompressed_v15.8_photoshop",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v15.2_key_error_fix",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v15.3_single_pass_fix",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v15.4_hybrid_single_pass",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v15.5_suffix_array",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v15.6_hash_lz77",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v15.8_photoshop",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v15.9_bloat_fix",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v16.0_smart_compression",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc_output_v16.1_levels",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc3d_v1.1_final_backup",
+      "C:\\Users\\logan\\OneDrive\\Documents\\drgfc3d_v1.3_backup",
+      "C:\\Users\\logan\\OneDrive\\Documents\\GitHub",
+      "C:\\Users\\logan\\OneDrive\\Documents\\HMSS",
+      "C:\\Users\\logan\\OneDrive\\Documents\\LAIA Test",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan's AI Email Agent",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Opus BCH Package Complete",
+      "C:\\Users\\logan\\OneDrive\\Documents\\RamDisk",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Scripts",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Some of Opus BCH chat",
+      "C:\\Users\\logan\\OneDrive\\Documents\\temp_drgfc_test",
+      "C:\\Users\\logan\\OneDrive\\Documents\\temp_drgfc3d_test",
+      "C:\\Users\\logan\\OneDrive\\Documents\\venv"
+    ],
+    "document_files": [
+      "C:\\Users\\logan\\OneDrive\\Documents\\Open AI API Key.txt",
+      "C:\\Users\\logan\\OneDrive\\Documents\\PyPI-Recovery-Codes-MetaphyKing-2026-02-17T06_50_09.106796 (1).txt",
+      "C:\\Users\\logan\\OneDrive\\Documents\\PyPI-Recovery-Codes-MetaphyKing-2026-02-17T06_50_09.106796.txt",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Randell Logan Smith \u00e2\u20ac\u201d Developer & Ai Systems Resume.pdf",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Randell Logan Smith \u00e2\u20ac\u201d Developer & AI Systems Resume1.pdf.drgfc",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Randell Logan Smith \u00e2\u20ac\u201d Developer & AI Systems Resume1_decompressed.pdf",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Randell Logan Smith \u00e2\u20ac\u201d Recommendation.pdf",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Randell Logan Smith CV ATS.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Randell Logan Smith Resume 11-30-25.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Randell_Logan_Smith_Resume_Mobile.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Screenshot 2026-01-02 175329.pdf",
+      "C:\\Users\\logan\\OneDrive\\Documents\\sync_all_memory_cores.py",
+      "C:\\Users\\logan\\OneDrive\\Documents\\UNIVERSAL_CLN_REGISTRY.md",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Cosmic BCH.txt",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Desktop Accounts - chase.com.pdf",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Desktop Bill Pay (...8701) - chase.com.pdf",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Desktop Pay - chase.com.pdf",
+      "C:\\Users\\logan\\OneDrive\\Documents\\DRGFC-LC API Key.txt",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Email Signature.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Error Logs.txt",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Exotics Racing Order Notification.eml",
+      "C:\\Users\\logan\\OneDrive\\Documents\\knowledge_base.json",
+      "C:\\Users\\logan\\OneDrive\\Documents\\LAIA VS Code Cursor Extension.js",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_CV_ATS.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_CV_ATS_BasePrime.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_CV_DevAI.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_CV_DevAI_BasePrime.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_CV_Print.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_CV_Print_BasePrime.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_Recommendation.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_Recommendation_TeamBrain.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\Logan_Smith_Resume_Dev_AI.html",
+      "C:\\Users\\logan\\OneDrive\\Documents\\logansmith17 yahoo rec code.txt",
+      "C:\\Users\\logan\\OneDrive\\Documents\\long_term_memory.json",
+      "C:\\Users\\logan\\OneDrive\\Documents\\METAPHY_LLC_COMPLETE_OVERVIEW.md"
+    ],
+    "extensions": [
+      ".md",
+      ".txt",
+      ".json",
+      ".py",
+      ".js",
+      ".ts",
+      ".tsx",
+      ".jsx",
+      ".html",
+      ".css",
+      ".yml",
+      ".yaml",
+      ".toml",
+      ".cfg",
+      ".ini",
+      ".log",
+      ".csv",
+      ".xml",
+      ".sh",
+      ".ps1",
+      ".bat",
+      ".cmd",
+      ".sql",
+      ".rs",
+      ".go",
+      ".java",
+      ".c",
+      ".cpp",
+      ".h",
+      ".hpp",
+      ".r",
+      ".ipynb",
+      ".env",
+      ".conf",
+      ".pdf",
+      ".cu",
+      ".cc",
+      ".cuh",
+      ".inl",
+      ".cs",
+      ".swift",
+      ".svelte",
+      ".kt",
+      ".rst",
+      ".cmake",
+      ".tcl",
+      ".inc",
+      ".td",
+      ".mlir",
+      ".jsonl",
+      ".eml",
+      ".xsd",
+      ".ocl",
+      ".cxx",
+      ".mdx",
+      ".proto",
+      ".rb",
+      ".php",
+      ".lua",
+      ".m",
+      ".mm",
+      ".asm",
+      ".docx",
+      ".xlsx",
+      ".xls",
+      ".pptx",
+      ".epub",
+      ".msg"
+    ],
+    "exclude_dirs": [
+      ".git",
+      "node_modules",
+      "__pycache__",
+      ".venv",
+      "venv",
+      ".next",
+      "dist",
+      "build",
+      ".cache",
+      ".nuget",
+      "packages",
+      "site-packages",
+      ".mypy_cache",
+      ".pytest_cache",
+      "Debug",
+      "Release",
+      "bin",
+      "obj",
+      "target",
+      "AppData",
+      "WindowsApps",
+      ".tox",
+      ".eggs",
+      "*.egg-info"
+    ],
+    "exclude_files": [
+      "package-lock.json",
+      "yarn.lock",
+      "Cargo.lock",
+      "pnpm-lock.yaml",
+      "*.min.js",
+      "*.min.css",
+      "*.map",
+      "*.d.ts",
+      "tsconfig.tsbuildinfo",
+      "*.pyc",
+      "*.pyo"
+    ],
+    "max_file_size_mb": 30.0,
+    "chunk_size_chars": 100000,
+    "batch_size": 100,
+    "enable_dedup": true,
+    "manifest_path": "data/mass_ingest_manifest.json"
+  },
+  "multimedia": {
+    "tesseract_cmd": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
+    "tesseract_fallback_min_chars": 20,
+    "tesseract_lang": "eng",
+    "vibe_cmd": "C:\\Users\\logan\\AppData\\Local\\vibe\\sona.exe",
+    "vibe_diarize_cmd": "C:\\Users\\logan\\AppData\\Local\\vibe\\sona-diarize.exe",
+    "ffmpeg_cmd": "C:\\Users\\logan\\AppData\\Local\\vibe\\ffmpeg.exe",
+    "video_analysis_path": "C:\\Users\\logan\\OneDrive\\Documents\\AutoProjects\\VideoAnalysis",
+    "audio_analysis_path": "C:\\Users\\logan\\OneDrive\\Documents\\AutoProjects\\AudioAnalysis",
+    "per_image_timeout_sec": 30,
+    "per_audio_timeout_sec": 120,
+    "per_video_timeout_sec": 300,
+    "video_frame_interval_sec": 10,
+    "max_video_frames": 60,
+    "enable_tesseract_fallback": true,
+    "enable_vibe_transcription": true,
+    "enable_video_analysis": true,
+    "enable_audio_analysis": true,
+    "enable_quality_grading": true
+  },
+  "enrichment": {
+    "tools_dir": "C:\\Users\\logan\\OneDrive\\Documents\\AutoProjects",
+    "manifest_path": "data/enrichment_manifest.json",
+    "batch_size": 50,
+    "per_file_timeout_sec": 30,
+    "max_annotations_per_tool": 25,
+    "total_max_annotations": 80,
+    "enable_tools": {
+      "code_metrics": true,
+      "code_review": true,
+      "markdown_lint": true,
+      "emotional_texture": true,
+      "consciousness_marker": true,
+      "log_hunter": true,
+      "json_query": true,
+      "yaml_query": true,
+      "csv_query": true,
+      "secret_scanner": true,
+      "dep_mapper": true,
+      "session_doc_gen": true,
+      "conversation_auditor": true,
+      "context_compressor": true,
+      "cubin_metadata": true
+    },
+    "skip_patterns": []
+  },
+  "gaama": {
+    "enabled": true,
+    "ppr_alpha": 0.15,
+    "ppr_weight": 0.3,
+    "ppr_max_iter": 50,
+    "ppr_epsilon": 0.0001,
+    "ppr_hops": 2,
+    "hub_dampening_theta": 50,
+    "ppr_top_k": 200,
+    "cache_ttl_seconds": 3600,
+    "cache_max_neighbors": 200,
+    "blend_mode": "weighted"
+  },
+  "roadmap": {
+    "current_version": "1.0.0-pp",
+    "releases": {
+      "v1.0_GA": {
+        "status": "shipped",
+        "date": "2026-03-14",
+        "features": [
+          "File watcher auto-ingest (watchdog + polling fallback)",
+          "Processed file tracking (survives restarts)",
+          "Retry queue for failed ingestions",
+          "Context injection script (uaimc_context_inject.py)",
+          "VS Code folderOpen auto-load task",
+          "Simplified 3-step end session",
+          "Scheduled reminders system"
+        ]
+      },
+      "v1.0_PP": {
+        "status": "shipped",
+        "date": "2026-03-15",
+        "features": [
+          "Tool integration layer (uaimc_tools.py) - 10 AutoProject tools",
+          "Emotional texture annotations (EmotionalTextureAnalyzer Tier 1)",
+          "Backup integrity verification (HashGuard Tier 1)",
+          "Schema drift detection (SQLSchemaDiff Tier 1)",
+          "Context decay monitoring (ContextDecayMeter custom impl)",
+          "Per-agent token usage tracking (TokenTracker)",
+          "Cross-agent knowledge graph bridge (KnowledgeSync)",
+          "MCP tool definitions and registration (MCPBridge)",
+          "Context visibility tags [UAIMC: N sources]",
+          "Performance: 64MB cache, 256MB mmap, batch annotation inserts",
+          "8 new API endpoints: /tools /decay /token-usage /knowledge /knowledge/stats /schema-drift /backup-integrity /mcp-tools",
+          "Health endpoint enriched with integrity/drift/decay/tools metrics"
+        ]
+      },
+      "v1.1_chat_scrapers": {
+        "status": "planned",
+        "target_date": "2026-03-21",
+        "reminder_id": "uaimc_v1.1_chat_scrapers",
+        "trigger_criteria": "See UAIMC_v1.1_UPGRADE_TRACKER.md",
+        "features": [
+          "VS Code state.vscdb scraper (Copilot conversations)",
+          "Cursor IDE state.vscdb scraper (FORGE/ATLAS conversations)",
+          "Claude CLI conversation JSON scraper (IRIS/CLIO/PORTER)",
+          "Incremental capture with content_hash dedup",
+          "WAL-safe SQLite reading (copy-then-read)"
+        ]
+      },
+      "v1.2_browser_extensions": {
+        "status": "planned",
+        "target_date": "2026-04-01",
+        "reminder_id": "uaimc_v1.2_browser_extension",
+        "features": [
+          "Gemini browser extension (gemini.google.com)",
+          "Grok browser extension (x.com/i/grok)",
+          "Alternative: API middleware logging"
+        ]
+      }
+    }
+  }
+}

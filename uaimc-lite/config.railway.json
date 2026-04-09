@@ -1,0 +1,98 @@
+{
+  "pulse": {
+    "auth_token": null
+  },
+  "service": {
+    "host": "0.0.0.0",
+    "port": 8765,
+    "log_level": "INFO",
+    "_comment": "Railway sets $PORT; uaimc_service.py reads service.port as fallback"
+  },
+  "ramdisk": {
+    "drive_letter": "",
+    "size_gb": 0,
+    "db_path": "/data/uaimc.db",
+    "db_path_ramdisk": "/data/uaimc.db",
+    "_comment": "No ramdisk on Railway — DB lives on persistent volume at /data/uaimc.db"
+  },
+  "backup": {
+    "dir": "/tmp/uaimc_backup",
+    "interval_seconds": 0,
+    "on_shutdown": false,
+    "_comment": "Backups disabled on Railway — DB is read-only, source of truth is local"
+  },
+  "bch": {
+    "db_path": "",
+    "webhook_enabled": false,
+    "_comment": "BCH not available on Railway"
+  },
+  "gpu": {
+    "enabled": false,
+    "max_mb": 0,
+    "sync_interval_seconds": 0,
+    "_comment": "No GPU on Railway — FTS5 search only"
+  },
+  "context": {
+    "default_token_budget": 4000,
+    "max_token_budget": 8000,
+    "recency_boost_24h": 2.0,
+    "recency_boost_7d": 1.5,
+    "cache_ttl_seconds": 60,
+    "max_cache_entries": 256,
+    "ambient_cache_ttl_seconds": 120,
+    "compression_level": 2,
+    "full_verbatim_pct": 0.3,
+    "summary_only_pct": 0.3,
+    "mid_truncate_chars": 100,
+    "agent_overrides": {
+      "ORACLE": {
+        "compression_level": 2,
+        "word_budget": 4000,
+        "ppr_hops": 3,
+        "ppr_alpha": 0.10,
+        "ppr_weight": 0.4,
+        "cross_agent_blend": 0.25
+      }
+    },
+    "default_word_budget": 8000
+  },
+  "scoring": {
+    "coverage_floor": 0.15,
+    "recency_max_boost": 1.0,
+    "recency_half_life_hours": 48,
+    "topic_keyword_weight": 0.6,
+    "temporal_recent_signals": ["current", "latest", "now", "today", "recent", "status", "update"],
+    "temporal_historical_signals": ["original", "first", "history", "foundation", "origin", "initial", "when", "earliest"],
+    "use_generated_at": true,
+    "neutral_decay_multiplier": 0.2,
+    "selection_signal_weights": {
+      "ranking_promoted": 0.3,
+      "curator_suggested": 0.5,
+      "user_selected": 1.0
+    },
+    "selection_decay_days": 30,
+    "heat_window_hours": 168,
+    "heat_decay_half_life_hours": 24,
+    "heat_boost_cap": 1.5,
+    "heat_source_weights": {
+      "query": 1.0,
+      "ingest": 0.5,
+      "selection": 2.0,
+      "session_start": 0.3
+    },
+    "discovery_bonus": 1.3,
+    "link_decay_per_hop": 0.5,
+    "graph_max_hops": 2,
+    "graph_link_overlap_threshold": 3,
+    "graph_link_weights": {
+      "shared_annotation": "proportional_to_overlap",
+      "same_project": 0.7,
+      "same_author": 0.5,
+      "referenced_in": 0.8,
+      "curator_linked": 0.9,
+      "session_adjacent": 0.4
+    },
+    "rejection_base_penalty": 0.1,
+    "rejection_half_life_days": 60
+  }
+}

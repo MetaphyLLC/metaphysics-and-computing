@@ -9,7 +9,7 @@ const { WebSocketServer } = require('ws');
 const OpenAI = require('openai');
 
 const { buildSystemPrompt } = require('./oracle-prompt');
-const { buildRagContext, ingestConversation, checkUAIMCHealth } = require('./uaimc-client');
+const { buildRagContext, ingestConversation, checkUAIMCHealth, checkCANSHealth } = require('./uaimc-client');
 const { sentenceBufferedStream, writeNdjsonEvent } = require('./streaming');
 const { applySecurityMiddleware, apiRateLimiter, validateChatInput } = require('./security');
 
@@ -113,13 +113,16 @@ app.use(express.json({ limit: '16kb' }));
  * Returns server + dependency health status.
  */
 app.get('/api/health', async (req, res) => {
-  const uaimcHealthy = await checkUAIMCHealth();
-  // Quick DeepInfra check: we assume healthy if API key is set (avoid billing a test call)
+  const [uaimcHealthy, cansAvailable] = await Promise.all([
+    checkUAIMCHealth(),
+    checkCANSHealth()
+  ]);
   const deepinfraConfigured = Boolean(DEEPINFRA_API_KEY);
 
   res.json({
     status: 'ok',
     uaimc: uaimcHealthy,
+    cans: cansAvailable,
     deepinfra: deepinfraConfigured,
     model: LLM_MODEL,
     tts: ttsClient ? TTS_MODEL : 'disabled',
@@ -194,6 +197,51 @@ app.post('/api/chat', apiRateLimiter, async (req, res) => {
     }
   } finally {
     res.end();
+  }
+});
+
+// ─── 3D-Map Proxy Routes (UAIMC → Railway) ──────────────────────────────────
+const UAIMC_URL = process.env.UAIMC_URL || 'http://localhost:8765';
+
+app.get('/api/v1/3d-map/overview', async (req, res) => {
+  try {
+    const resp = await fetch(`${UAIMC_URL}/api/v1/3d-map/overview`, {
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    console.error('3d-map overview proxy error:', err.message);
+    res.status(502).json({ error: 'UAIMC unreachable' });
+  }
+});
+
+app.get('/api/v1/3d-map/search', async (req, res) => {
+  try {
+    const q = req.query.q || '';
+    const limit = parseInt(req.query.limit) || 50;
+    const resp = await fetch(`${UAIMC_URL}/api/v1/3d-map/search?q=${encodeURIComponent(q)}&limit=${limit}`, {
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    console.error('3d-map search proxy error:', err.message);
+    res.status(502).json({ error: 'UAIMC unreachable' });
+  }
+});
+
+app.get('/api/v1/3d-map/expand/*', async (req, res) => {
+  try {
+    const nodeId = req.params[0];
+    const resp = await fetch(`${UAIMC_URL}/api/v1/3d-map/expand/${encodeURIComponent(nodeId)}`, {
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    console.error('3d-map expand proxy error:', err.message);
+    res.status(502).json({ error: 'UAIMC unreachable' });
   }
 });
 

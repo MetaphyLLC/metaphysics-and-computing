@@ -1,0 +1,57 @@
+# ── UAIMC-lite: CPU-only read-mostly service for Railway ────────────────────
+# Serves: /health, /query, /context, /api/v1/3d-map/*, /graph/stats
+# Does NOT ship the 4GB SQLite — that lives on a Railway persistent volume.
+#
+# Build:  docker build -f Dockerfile.railway -t uaimc-lite .
+# Run:    docker run -p 8765:8765 -v /path/to/data:/data uaimc-lite
+
+FROM python:3.12-slim
+
+# System deps for SQLite FTS5 (included in python:3.12-slim's sqlite3)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ── Python dependencies (minimal, no torch/CUDA/watchdog) ──────────────────
+COPY requirements.railway.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ── Application code ───────────────────────────────────────────────────────
+COPY uaimc_service.py .
+COPY ppr_engine.py .
+COPY uaimc_anno.py .
+COPY uaimc_ambient.py .
+COPY uaimc_gpu.py .
+COPY uaimc_tools.py .
+COPY uaimc_watcher.py .
+COPY guardian_prompts.py .
+COPY guardian_tools.py .
+
+# ── Railway config override ────────────────────────────────────────────────
+# Overrides local config.json with Railway-appropriate settings:
+#   - host 0.0.0.0 (listen on all interfaces)
+#   - DB path points to volume mount
+#   - GPU disabled, ramdisk disabled, backup disabled, BCH disabled
+COPY config/ config/
+COPY config.railway.json config/config.json
+
+# ── Logs directory ─────────────────────────────────────────────────────────
+RUN mkdir -p /app/logs
+
+# ── Volume mount point for the 4GB SQLite ──────────────────────────────────
+# Railway persistent volume mounts here. The DB file goes at /data/uaimc.db
+VOLUME /data
+
+# ── Entrypoint script (downloads DB on first boot) ─────────────────────────
+COPY start.railway.sh .
+RUN chmod +x start.railway.sh
+
+# ── Health check ───────────────────────────────────────────────────────────
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8765}/health || exit 1
+
+# ── Start ──────────────────────────────────────────────────────────────────
+# Railway sets $PORT; start.railway.sh downloads DB if needed, then starts uvicorn
+CMD ["./start.railway.sh"]

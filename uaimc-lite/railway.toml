@@ -1,0 +1,21 @@
+# ── UAIMC-lite Railway Configuration ────────────────────────────────────────
+# This configures the UAIMC-lite service within Railway.
+# Deploy as a separate service in the same Railway project as oracle-backend.
+
+[build]
+dockerfilePath = "Dockerfile.railway"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 10
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Railway assigns $PORT automatically; uaimc_service.py reads it via os.environ
+# Internal URL for oracle-backend to reach this service:
+#   http://uaimc-lite.railway.internal:$PORT
+
+[deploy.volumes]
+# Persistent volume for the 4GB SQLite database
+# Mount path must match config.railway.json ramdisk.db_path
+"/data" = "uaimc_data"
