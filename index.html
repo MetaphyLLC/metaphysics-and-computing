@@ -973,7 +973,7 @@ class Oracle {
       restUrl: config.restUrl || 'https://metaphysics-and-computing-production.up.railway.app/api/chat',
       healthUrl: config.healthUrl || 'https://metaphysics-and-computing-production.up.railway.app/api/health',
       wsUrl: config.wsUrl || null,
-      maxMessageLength: 500,
+      maxMessageLength: 1000,
       sessionTimeout: 30 * 60 * 1000,
       enableMockMode: config.enableMockMode !== undefined ? config.enableMockMode : true,
       ...config
