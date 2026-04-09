@@ -394,6 +394,546 @@ const nodeMeshMap = new Map();
 const labelSpriteMap = new Map();
 let showLabels = true;
 
+// ─── Force Simulation Engine (Barnes-Hut) ───────────────
+class ForceSimulation {
+  constructor() {
+    this.nodes = [];       // [{id, x, y, z, vx, vy, vz, fx, fy, fz, mass}]
+    this.edges = [];       // [{source, target, restLength, springK}]
+    this.nodeMap = new Map();
+    this.repulsion = 8000;
+    this.damping = 0.92;
+    this.centerGravity = 0.001;
+    this.theta = 0.7;      // Barnes-Hut approximation ratio
+    this.active = true;
+    this._tmpVec = { x: 0, y: 0, z: 0 };
+  }
+
+  init(nodes, edges) {
+    this.nodes = nodes.map(n => {
+      const mass = this._parseImportance(n.importance);
+      return {
+        id: n.id, x: n.x || 0, y: n.y || 0, z: n.z || 0,
+        vx: 0, vy: 0, vz: 0, fx: 0, fy: 0, fz: 0,
+        mass, origX: n.x || 0, origY: n.y || 0, origZ: n.z || 0
+      };
+    });
+    this.nodeMap.clear();
+    this.nodes.forEach(n => this.nodeMap.set(n.id, n));
+
+    this.edges = edges.map(e => {
+      let restLength = 40;
+      if (e.type === 'contains') restLength = 30;
+      else if (e.type === 'NEXT') restLength = 50;
+      const w = parseFloat(e.weight) || 1;
+      restLength /= Math.sqrt(w);
+      return { source: e.source, target: e.target, restLength, springK: 0.04 };
+    });
+    console.log(`ForceSimulation initialized: ${this.nodes.length} nodes, ${this.edges.length} edges`);
+  }
+
+  _parseImportance(imp) {
+    if (imp === undefined || imp === null || imp === 'simple') return 1.0;
+    const v = parseFloat(imp);
+    if (isNaN(v)) return 1.0;
+    return Math.max(0.1, Math.min(3.0, v * 3));
+  }
+
+  simulate(dt) {
+    if (!this.active || this.nodes.length === 0) return;
+    dt = Math.min(dt, 0.033); // Cap dt to prevent spiral of death
+
+    // Reset forces
+    for (let i = 0; i < this.nodes.length; i++) {
+      this.nodes[i].fx = 0; this.nodes[i].fy = 0; this.nodes[i].fz = 0;
+    }
+
+    // 1. Barnes-Hut repulsion
+    this._computeRepulsion();
+
+    // 2. Spring forces from edges
+    this._computeSprings();
+
+    // 3. Center gravity
+    this._computeGravity();
+
+    // 4. Integration (Velocity Verlet)
+    const damping = this.damping;
+    for (let i = 0; i < this.nodes.length; i++) {
+      const n = this.nodes[i];
+      const invMass = 1 / n.mass;
+      n.vx = (n.vx + n.fx * invMass * dt) * damping;
+      n.vy = (n.vy + n.fy * invMass * dt) * damping;
+      n.vz = (n.vz + n.fz * invMass * dt) * damping;
+      n.x += n.vx * dt;
+      n.y += n.vy * dt;
+      n.z += n.vz * dt;
+    }
+  }
+
+  _computeRepulsion() {
+    // Build octree
+    const root = this._buildOctree();
+    if (!root) return;
+
+    for (let i = 0; i < this.nodes.length; i++) {
+      this._octreeForce(root, this.nodes[i]);
+    }
+  }
+
+  _buildOctree() {
+    if (this.nodes.length === 0) return null;
+    // Find bounds
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (const n of this.nodes) {
+      if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+      if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+      if (n.z < minZ) minZ = n.z; if (n.z > maxZ) maxZ = n.z;
+    }
+    const pad = 10;
+    const size = Math.max(maxX - minX, maxY - minY, maxZ - minZ) + pad * 2;
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+
+    const root = { cx, cy, cz, size, mass: 0, comX: 0, comY: 0, comZ: 0, body: null, children: null };
+    for (const n of this.nodes) {
+      this._octreeInsert(root, n);
+    }
+    return root;
+  }
+
+  _octreeInsert(node, body) {
+    if (node.mass === 0 && node.body === null && node.children === null) {
+      // Empty leaf — place body here
+      node.body = body;
+      node.mass = body.mass;
+      node.comX = body.x; node.comY = body.y; node.comZ = body.z;
+      return;
+    }
+
+    if (node.children === null) {
+      // Leaf with existing body — subdivide
+      node.children = new Array(8).fill(null);
+      const old = node.body;
+      node.body = null;
+      if (old) this._octreeInsertChild(node, old);
+    }
+
+    // Update center of mass
+    const totalMass = node.mass + body.mass;
+    node.comX = (node.comX * node.mass + body.x * body.mass) / totalMass;
+    node.comY = (node.comY * node.mass + body.y * body.mass) / totalMass;
+    node.comZ = (node.comZ * node.mass + body.z * body.mass) / totalMass;
+    node.mass = totalMass;
+
+    this._octreeInsertChild(node, body);
+  }
+
+  _octreeInsertChild(node, body) {
+    const hs = node.size / 2;
+    const ix = body.x >= node.cx ? 1 : 0;
+    const iy = body.y >= node.cy ? 1 : 0;
+    const iz = body.z >= node.cz ? 1 : 0;
+    const idx = ix + iy * 2 + iz * 4;
+
+    if (!node.children[idx]) {
+      node.children[idx] = {
+        cx: node.cx + (ix - 0.5) * hs,
+        cy: node.cy + (iy - 0.5) * hs,
+        cz: node.cz + (iz - 0.5) * hs,
+        size: hs, mass: 0, comX: 0, comY: 0, comZ: 0, body: null, children: null
+      };
+    }
+    this._octreeInsert(node.children[idx], body);
+  }
+
+  _octreeForce(node, body) {
+    if (node.mass === 0) return;
+    if (node.body === body) return;
+
+    const dx = node.comX - body.x;
+    const dy = node.comY - body.y;
+    const dz = node.comZ - body.z;
+    const distSq = dx * dx + dy * dy + dz * dz + 1; // +1 softening
+    const dist = Math.sqrt(distSq);
+
+    // If leaf with single body, or cell is far enough, treat as point mass
+    if (node.body !== null || (node.size / dist < this.theta)) {
+      // Repulsive force: F = -repulsion * m1 * m2 / dist^2
+      const force = -this.repulsion * body.mass * node.mass / distSq;
+      const fx = force * dx / dist;
+      const fy = force * dy / dist;
+      const fz = force * dz / dist;
+      body.fx += fx; body.fy += fy; body.fz += fz;
+      return;
+    }
+
+    // Recurse into children
+    if (node.children) {
+      for (let i = 0; i < 8; i++) {
+        if (node.children[i]) this._octreeForce(node.children[i], body);
+      }
+    }
+  }
+
+  _computeSprings() {
+    for (const e of this.edges) {
+      const src = this.nodeMap.get(e.source);
+      const tgt = this.nodeMap.get(e.target);
+      if (!src || !tgt) continue;
+
+      const dx = tgt.x - src.x;
+      const dy = tgt.y - src.y;
+      const dz = tgt.z - src.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+      const displacement = dist - e.restLength;
+      const force = e.springK * displacement;
+
+      const fx = force * dx / dist;
+      const fy = force * dy / dist;
+      const fz = force * dz / dist;
+
+      src.fx += fx; src.fy += fy; src.fz += fz;
+      tgt.fx -= fx; tgt.fy -= fy; tgt.fz -= fz;
+    }
+  }
+
+  _computeGravity() {
+    const g = this.centerGravity;
+    for (const n of this.nodes) {
+      n.fx -= n.x * g * n.mass;
+      n.fy -= n.y * g * n.mass;
+      n.fz -= n.z * g * n.mass;
+    }
+  }
+
+  syncToMeshes() {
+    for (const n of this.nodes) {
+      const mesh = nodeMeshMap.get(n.id);
+      if (mesh) {
+        mesh.position.x = n.x;
+        mesh.position.y = n.y;
+        mesh.position.z = n.z;
+      }
+      const label = labelSpriteMap.get(n.id);
+      if (label) {
+        const node = allNodes.find(an => an.id === n.id);
+        const yOff = (node && node.type === 'birth_event') ? 8 : 5;
+        label.position.x = n.x;
+        label.position.y = n.y + yOff;
+        label.position.z = n.z;
+      }
+    }
+  }
+
+  getNode(id) { return this.nodeMap.get(id); }
+}
+
+const forceSim = new ForceSimulation();
+
+// ─── Storm Controller ───────────────────────────────────
+class StormController {
+  constructor(sim) {
+    this.sim = sim;
+    this.state = 'idle'; // idle, disruption, attraction, crystallization, living, clearing
+    this.stormStart = 0;
+    this.matchingIds = new Set();
+    this.neighborIds = new Set();
+    this.clusterCenter = { x: 0, y: 0, z: 0 };
+    this._savedDamping = 0.92;
+    this._savedSprings = [];
+    this._vortexStrength = 0;
+    this._clearStart = 0;
+
+    // Camera storm state
+    this._cameraStartPos = null;
+    this._cameraStartTarget = null;
+    this._cameraPullbackDone = false;
+  }
+
+  trigger(matchingNodeIds) {
+    if (matchingNodeIds.length === 0) return;
+
+    this.matchingIds = new Set(matchingNodeIds);
+    this.state = 'disruption';
+    this.stormStart = clock.getElapsedTime();
+    this._savedDamping = this.sim.damping;
+    this._cameraPullbackDone = false;
+
+    // Find neighbor IDs (directly connected to matching nodes)
+    this.neighborIds.clear();
+    this.sim.edges.forEach(e => {
+      if (this.matchingIds.has(e.source) && !this.matchingIds.has(e.target)) this.neighborIds.add(e.target);
+      if (this.matchingIds.has(e.target) && !this.matchingIds.has(e.source)) this.neighborIds.add(e.source);
+    });
+
+    // Save camera
+    this._cameraStartPos = camera.position.clone();
+    this._cameraStartTarget = controls.target.clone();
+
+    // Compute cluster center from matching nodes
+    let cx = 0, cy = 0, cz = 0, cnt = 0;
+    this.matchingIds.forEach(id => {
+      const n = this.sim.getNode(id);
+      if (n) { cx += n.x; cy += n.y; cz += n.z; cnt++; }
+    });
+    if (cnt > 0) { cx /= cnt; cy /= cnt; cz /= cnt; }
+    this.clusterCenter = { x: cx, y: cy, z: cz };
+
+    // Dim non-matching nodes
+    nodeMeshMap.forEach((mesh, nodeId) => {
+      if (this.matchingIds.has(nodeId)) {
+        mesh.material.opacity = 1.0;
+        mesh.material.emissiveIntensity = 0.8;
+      } else if (this.neighborIds.has(nodeId)) {
+        mesh.material.opacity = 0.5;
+        mesh.material.emissiveIntensity = 0.3;
+      } else {
+        mesh.material.opacity = 0.12;
+        mesh.material.emissiveIntensity = 0.08;
+      }
+    });
+
+    // Dim edges
+    edgeGroup.children.forEach(line => {
+      const eid = line.userData.edgeId || '';
+      const parts = eid.split('->');
+      const bothMatch = parts.every(p => this.matchingIds.has(p));
+      const oneMatch = parts.some(p => this.matchingIds.has(p));
+      line.material.opacity = bothMatch ? 0.6 : oneMatch ? 0.15 : 0.02;
+    });
+
+    // Label visibility
+    labelSpriteMap.forEach((sprite, nodeId) => {
+      sprite.visible = this.matchingIds.has(nodeId);
+    });
+
+    console.log(`Storm triggered: ${matchingNodeIds.length} matches, ${this.neighborIds.size} neighbors`);
+  }
+
+  clear() {
+    if (this.state === 'idle') return;
+    this.state = 'clearing';
+    this._clearStart = clock.getElapsedTime();
+    this.sim.damping = this._savedDamping;
+  }
+
+  update(t) {
+    if (this.state === 'idle') return;
+
+    const elapsed = t - this.stormStart;
+
+    if (this.state === 'clearing') {
+      this._updateClearing(t);
+      return;
+    }
+
+    // Phase transitions
+    if (elapsed < 0.8) {
+      this.state = 'disruption';
+      this._updateDisruption(elapsed);
+    } else if (elapsed < 2.0) {
+      if (this.state === 'disruption') this.state = 'attraction';
+      this._updateAttraction(elapsed);
+    } else if (elapsed < 3.5) {
+      if (this.state === 'attraction') this.state = 'crystallization';
+      this._updateCrystallization(elapsed);
+    } else {
+      if (this.state === 'crystallization') this.state = 'living';
+      this._updateLiving(elapsed);
+    }
+
+    // Camera behavior
+    this._updateCamera(elapsed);
+  }
+
+  _updateDisruption(elapsed) {
+    const progress = elapsed / 0.8; // 0→1
+
+    // Kill springs, add vortex
+    this.sim.damping = 0.96; // Less damping = more chaos
+
+    for (const n of this.sim.nodes) {
+      // Vortex: rotational torque around Y-axis
+      const dx = n.x - this.clusterCenter.x;
+      const dz = n.z - this.clusterCenter.z;
+      const radius = Math.sqrt(dx * dx + dz * dz) || 1;
+      const vortexSpeed = 3.0 * (1 - Math.exp(-radius / 50)); // Faster at periphery
+
+      n.fx += -dz * vortexSpeed * progress * 2;
+      n.fz += dx * vortexSpeed * progress * 2;
+
+      // Slight outward push
+      n.fx += dx / radius * 20 * progress;
+      n.fz += dz / radius * 20 * progress;
+    }
+  }
+
+  _updateAttraction(elapsed) {
+    const progress = (elapsed - 0.8) / 1.2; // 0→1
+
+    // Restore damping gradually
+    this.sim.damping = 0.92 + 0.03 * progress;
+
+    // Matching nodes → attract toward focal point in front of camera
+    const focal = { x: 0, y: 0, z: 50 };
+    for (const n of this.sim.nodes) {
+      if (this.matchingIds.has(n.id)) {
+        // Strong pull toward focal point
+        const strength = 2.0 * progress;
+        n.fx += (focal.x - n.x) * strength;
+        n.fy += (focal.y - n.y) * strength;
+        n.fz += (focal.z - n.z) * strength;
+      } else if (this.neighborIds.has(n.id)) {
+        // Neighbors: mild pull (via springs already, just restore half)
+        // Extra gentle pull toward focal
+        n.fx += (focal.x - n.x) * 0.3 * progress;
+        n.fy += (focal.y - n.y) * 0.3 * progress;
+        n.fz += (focal.z - n.z) * 0.3 * progress;
+      } else {
+        // Non-matching: push outward
+        const dx = n.x - focal.x;
+        const dy = n.y - focal.y;
+        const dz = n.z - focal.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+        n.fx += dx / dist * 15 * progress;
+        n.fy += dy / dist * 15 * progress;
+        n.fz += dz / dist * 15 * progress;
+      }
+    }
+
+    // Decay remaining vortex
+    const vortexDecay = 1 - progress;
+    if (vortexDecay > 0.01) {
+      for (const n of this.sim.nodes) {
+        const dx = n.x - this.clusterCenter.x;
+        const dz = n.z - this.clusterCenter.z;
+        n.fx += -dz * 1.0 * vortexDecay;
+        n.fz += dx * 1.0 * vortexDecay;
+      }
+    }
+  }
+
+  _updateCrystallization(elapsed) {
+    const progress = (elapsed - 2.0) / 1.5; // 0→1
+
+    // High damping for settling
+    this.sim.damping = 0.95 + 0.02 * progress;
+
+    // Matching nodes: gentle cluster gravity
+    const focal = { x: 0, y: 0, z: 50 };
+    for (const n of this.sim.nodes) {
+      if (this.matchingIds.has(n.id)) {
+        n.fx += (focal.x - n.x) * 0.8;
+        n.fy += (focal.y - n.y) * 0.8;
+        n.fz += (focal.z - n.z) * 0.8;
+      }
+    }
+
+    // Brighten matching edges progressively
+    edgeGroup.children.forEach(line => {
+      const eid = line.userData.edgeId || '';
+      const parts = eid.split('->');
+      const bothMatch = parts.every(p => this.matchingIds.has(p));
+      if (bothMatch) line.material.opacity = 0.4 + 0.3 * progress;
+    });
+
+    // Fade peripheral opacity even more
+    nodeMeshMap.forEach((mesh, nodeId) => {
+      if (!this.matchingIds.has(nodeId) && !this.neighborIds.has(nodeId)) {
+        mesh.material.opacity = Math.max(0.08, 0.12 - 0.04 * progress);
+      }
+    });
+  }
+
+  _updateLiving(elapsed) {
+    // Stable state: gentle cluster gravity for matching nodes
+    this.sim.damping = this._savedDamping;
+
+    const focal = { x: 0, y: 0, z: 50 };
+    for (const n of this.sim.nodes) {
+      if (this.matchingIds.has(n.id)) {
+        n.fx += (focal.x - n.x) * 0.5;
+        n.fy += (focal.y - n.y) * 0.5;
+        n.fz += (focal.z - n.z) * 0.5;
+      }
+    }
+
+    // Pulse matching nodes
+    const pulse = 0.6 + Math.sin(elapsed * 2) * 0.3;
+    this.matchingIds.forEach(id => {
+      const mesh = nodeMeshMap.get(id);
+      if (mesh) mesh.material.emissiveIntensity = pulse;
+    });
+  }
+
+  _updateClearing(t) {
+    const elapsed = t - this._clearStart;
+    const progress = Math.min(1, elapsed / 2.5); // 2.5s clear
+    const ease = progress * progress * (3 - 2 * progress); // smoothstep
+
+    // Restore all opacities
+    nodeMeshMap.forEach((mesh, nodeId) => {
+      mesh.material.opacity = 0.12 + ease * 0.78; // →0.9
+      mesh.material.emissiveIntensity = 0.08 + ease * 0.27; // →0.35
+    });
+
+    // Restore edge opacities
+    edgeGroup.children.forEach(line => {
+      const s = line.userData.state;
+      const target = s === 'hidden' ? 0.12 : s === 'suppressed' ? 0.35 : 0.2;
+      line.material.opacity = line.material.opacity + (target - line.material.opacity) * ease;
+    });
+
+    // Restore label visibility
+    labelSpriteMap.forEach((sprite, nodeId) => {
+      sprite.visible = showLabels;
+    });
+
+    // Restore damping
+    this.sim.damping = this._savedDamping;
+
+    if (progress >= 1) {
+      this.state = 'idle';
+      this.matchingIds.clear();
+      this.neighborIds.clear();
+    }
+  }
+
+  _updateCamera(elapsed) {
+    if (!this._cameraStartPos) return;
+
+    if (elapsed < 0.8) {
+      // Pull back during disruption
+      const progress = elapsed / 0.8;
+      const ease = progress * progress * (3 - 2 * progress);
+      const pullback = this._cameraStartPos.clone().multiplyScalar(1.2);
+      camera.position.lerpVectors(this._cameraStartPos, pullback, ease * 0.5);
+    } else if (elapsed < 3.5) {
+      // Push forward toward cluster
+      const progress = (elapsed - 0.8) / 2.7;
+      const ease = progress * progress * (3 - 2 * progress);
+      const target = new THREE.Vector3(
+        this.clusterCenter.x + 40,
+        this.clusterCenter.y + 25,
+        this.clusterCenter.z + 60
+      );
+      const pullback = this._cameraStartPos.clone().multiplyScalar(1.2);
+      camera.position.lerpVectors(pullback, target, ease);
+      controls.target.lerpVectors(
+        this._cameraStartTarget,
+        new THREE.Vector3(this.clusterCenter.x, this.clusterCenter.y, this.clusterCenter.z),
+        ease
+      );
+    }
+    // After 3.5s: camera stays, auto-orbit paused
+    controls.autoRotate = (this.state === 'idle' || this.state === 'clearing');
+  }
+
+  get isActive() { return this.state !== 'idle'; }
+}
+
+const stormController = new StormController(forceSim);
+
 // ─── Node Mesh Creation ─────────────────────────────────
 const edgeGroup = new THREE.Group();
 scene.add(edgeGroup);
@@ -767,6 +1307,9 @@ async function loadData() {
   visible.forEach(n => createNodeMesh(n));
   allEdges.forEach(e => createEdgeLine(e));
 
+  // Initialize force simulation with loaded data
+  forceSim.init(allNodes, allEdges);
+
   updateStatusBar();
 
   if (QUERY_HIGHLIGHT && HIGHLIGHT_MODE) {
@@ -862,6 +1405,7 @@ function selectNode(nodeId) {
 
   // Clear Oracle highlight when user manually selects a node
   oracleHighlightNodes.clear();
+  if (stormController.isActive) stormController.clear();
 
   if (!window.neuroluxOracle || !window.neuroluxOracle.panelOpen) {
     showInfoPanel(node);
@@ -1125,19 +1669,44 @@ function animate() {
   coreRing2.rotation.z = t * 0.1;
   coreLight.intensity = 2.5 + Math.sin(t * 1.5) * 0.8;
 
-  // Node idle animations
+  // ─── Force Simulation Step ──────────────────────────
+  forceSim.simulate(dt);
+  stormController.update(t);
+  forceSim.syncToMeshes();
+
+  // ─── Update Edge Positions (follows moving nodes) ───
+  if (frameCount % 2 === 0) {
+    edgeGroup.children.forEach(line => {
+      const eid = line.userData.edgeId || '';
+      const parts = eid.split('->');
+      if (parts.length !== 2) return;
+      const srcN = forceSim.getNode(parts[0]);
+      const tgtN = forceSim.getNode(parts[1]);
+      if (!srcN || !tgtN) return;
+      const posAttr = line.geometry.attributes.position;
+      posAttr.array[0] = srcN.x; posAttr.array[1] = srcN.y; posAttr.array[2] = srcN.z;
+      posAttr.array[3] = tgtN.x; posAttr.array[4] = tgtN.y; posAttr.array[5] = tgtN.z;
+      posAttr.needsUpdate = true;
+      if (line.computeLineDistances) line.computeLineDistances();
+    });
+  }
+
+  // Node idle animations (additive: rotation + subtle bob offset)
   if (frameCount % 2 === 0) {
     nodeMeshMap.forEach((mesh, nodeId) => {
       const node = allNodes.find(n => n.id === nodeId);
       if (!node) return;
-      const speed = 0.3 + (node.importance || 0.5) * 0.4;
+      const speed = 0.3 + (parseFloat(node.importance) || 0.5) * 0.4;
       const offset = nodeId.charCodeAt(nodeId.length - 1) * 0.1;
       mesh.rotation.y = t * speed * 0.5 + offset;
       if (node.type === 'birth_event') {
         mesh.rotation.x = Math.sin(t * 0.3 + offset) * 0.1;
-        mesh.position.y = node.y + Math.sin(t * 0.5 + offset) * 1.5;
+        // Additive bob on top of sim position
+        const simNode = forceSim.getNode(nodeId);
+        if (simNode) mesh.position.y = simNode.y + Math.sin(t * 0.5 + offset) * 1.5;
       } else {
-        mesh.position.y = node.y + Math.sin(t * 0.4 + offset) * 0.5;
+        const simNode = forceSim.getNode(nodeId);
+        if (simNode) mesh.position.y = simNode.y + Math.sin(t * 0.4 + offset) * 0.5;
       }
     });
   }
@@ -1641,6 +2210,9 @@ const ORACLE_HIGHLIGHT_DURATION = 12; // seconds before fade
 async function highlightForOracle(query) {
   if (!query) return;
 
+  // Clear any existing storm first
+  if (stormController.isActive) stormController.clear();
+
   let matchingNodeIds = [];
 
   // Try API search first (LIVE mode), fall back to local
@@ -1667,84 +2239,22 @@ async function highlightForOracle(query) {
 
   if (matchingNodeIds.length === 0) return;
 
-  // Set highlight state
+  // Trigger the storm
+  stormController.trigger(matchingNodeIds);
+
+  // Set legacy highlight state for compatibility
   oracleHighlightNodes = new Set(matchingNodeIds);
   oracleHighlightStart = clock.getElapsedTime();
-
-  // Dim non-matching, brighten matching
-  nodeMeshMap.forEach((mesh, nodeId) => {
-    if (oracleHighlightNodes.has(nodeId)) {
-      mesh.material.opacity = 1.0;
-      mesh.material.emissiveIntensity = 1.0;
-    } else {
-      mesh.material.opacity = 0.1;
-      mesh.material.emissiveIntensity = 0.1;
-    }
-  });
-
-  // Dim edges except those connecting highlighted nodes
-  edgeGroup.children.forEach(line => {
-    const eid = line.userData.edgeId || '';
-    const parts = eid.split('->');
-    const connected = parts.some(p => oracleHighlightNodes.has(p));
-    line.material.opacity = connected ? 0.5 : 0.02;
-  });
-
-  // Camera: fly toward centroid of highlighted nodes
-  const centroid = new THREE.Vector3();
-  let count = 0;
-  matchingNodeIds.forEach(nid => {
-    const mesh = nodeMeshMap.get(nid);
-    if (mesh) { centroid.add(mesh.position); count++; }
-  });
-  if (count > 0) {
-    centroid.divideScalar(count);
-    const targetPos = centroid.clone().add(new THREE.Vector3(40, 25, 50));
-    const startPos = camera.position.clone();
-    const startTarget = controls.target.clone();
-    let progress = 0;
-    const flyCamera = () => {
-      progress += 0.02;
-      if (progress > 1) progress = 1;
-      const ease = progress * progress * (3 - 2 * progress); // smoothstep
-      camera.position.lerpVectors(startPos, targetPos, ease);
-      controls.target.lerpVectors(startTarget, centroid, ease);
-      if (progress < 1) requestAnimationFrame(flyCamera);
-    };
-    flyCamera();
-  }
 }
 
 function updateOracleHighlight(t) {
-  if (oracleHighlightNodes.size === 0) return;
-
-  const elapsed = t - oracleHighlightStart;
-
-  // Pulse effect on highlighted nodes
-  const pulse = 0.7 + Math.sin(elapsed * 3) * 0.3;
-  oracleHighlightNodes.forEach(nodeId => {
-    const mesh = nodeMeshMap.get(nodeId);
-    if (mesh && mesh.material) {
-      mesh.material.emissiveIntensity = pulse;
-    }
-  });
-
-  // Fade out after duration
-  if (elapsed > ORACLE_HIGHLIGHT_DURATION) {
-    const fadeProgress = Math.min(1, (elapsed - ORACLE_HIGHLIGHT_DURATION) / 3); // 3s fade
-    if (fadeProgress >= 1) {
+  // Storm controller handles everything now
+  // Auto-clear storm after ORACLE_HIGHLIGHT_DURATION
+  if (stormController.isActive && stormController.state === 'living') {
+    const elapsed = t - oracleHighlightStart;
+    if (elapsed > ORACLE_HIGHLIGHT_DURATION) {
+      stormController.clear();
       oracleHighlightNodes.clear();
-      deselectAll();
-    } else {
-      nodeMeshMap.forEach((mesh, nodeId) => {
-        if (oracleHighlightNodes.has(nodeId)) {
-          mesh.material.opacity = 1.0 - fadeProgress * 0.1;
-          mesh.material.emissiveIntensity = pulse * (1 - fadeProgress) + 0.35 * fadeProgress;
-        } else {
-          mesh.material.opacity = 0.1 + fadeProgress * 0.8;
-          mesh.material.emissiveIntensity = 0.1 + fadeProgress * 0.25;
-        }
-      });
     }
   }
 }
