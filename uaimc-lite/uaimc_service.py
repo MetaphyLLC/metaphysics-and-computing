@@ -135,6 +135,7 @@ PORT = int(os.environ.get("PORT", CONFIG.get("service", {}).get("port", 8765)))
 DB_PATH = os.environ.get("DB_PATH", CONFIG.get("ramdisk", {}).get("db_path", "U:\\uaimc\\uaimc.db"))
 BACKUP_DIR = Path(CONFIG.get("backup", {}).get("dir", str(Path(__file__).parent / "backup")))
 BACKUP_INTERVAL = CONFIG.get("backup", {}).get("interval_seconds", 300)
+_GPU_ENABLED = CONFIG.get("gpu", {}).get("enabled", True)
 CONTEXT_LIMIT = CONFIG.get("context", {}).get("default_token_budget", 4000)
 MAX_CONTEXT = CONFIG.get("context", {}).get("max_token_budget", 8000)
 # RECENCY_BOOST_24H / _7D removed (dead code, superseded by _apply_temporal_scoring)
@@ -542,14 +543,26 @@ class ConnectionPool:
         "PRAGMA mmap_size=2147483648",
         "PRAGMA temp_store=MEMORY",
     )
+    # Lite mode PRAGMAs: conservative memory for Railway/CPU-only deployment
+    _PRAGMAS_LITE = (
+        "PRAGMA journal_mode=WAL",
+        "PRAGMA synchronous=NORMAL",
+        "PRAGMA busy_timeout=10000",
+        "PRAGMA cache_size=-64000",
+        "PRAGMA mmap_size=268435456",
+        "PRAGMA temp_store=MEMORY",
+        "PRAGMA query_only=ON",
+    )
 
     def __init__(self, db_path: str, size: int = 4):
-        self._pool: queue.Queue[sqlite3.Connection] = queue.Queue(maxsize=size)
-        self._size = size
-        for _ in range(size):
+        effective_size = size if _GPU_ENABLED else min(size, 4)
+        pragmas = self._PRAGMAS if _GPU_ENABLED else self._PRAGMAS_LITE
+        self._pool: queue.Queue[sqlite3.Connection] = queue.Queue(maxsize=effective_size)
+        self._size = effective_size
+        for _ in range(effective_size):
             conn = sqlite3.connect(db_path, check_same_thread=False)
             conn.row_factory = sqlite3.Row
-            for pragma in self._PRAGMAS:
+            for pragma in pragmas:
                 conn.execute(pragma)
             self._pool.put(conn)
 
@@ -583,12 +596,18 @@ class UnifiedMemory:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA synchronous=NORMAL")
         self.db.execute("PRAGMA busy_timeout=10000")   # 10s retry on lock contention (multi-process safe)
-        self.db.execute("PRAGMA cache_size=-512000")  # 512MB page cache (OPT-007: was 64MB)
-        self.db.execute("PRAGMA mmap_size=2147483648") # 2GB memory-mapped I/O (OPT-007: was 256MB)
+        if _GPU_ENABLED:
+            self.db.execute("PRAGMA cache_size=-512000")  # 512MB page cache (OPT-007: was 64MB)
+            self.db.execute("PRAGMA mmap_size=2147483648") # 2GB memory-mapped I/O (OPT-007: was 256MB)
+        else:
+            self.db.execute("PRAGMA cache_size=-64000")   # 64MB page cache (Railway lite mode)
+            self.db.execute("PRAGMA mmap_size=268435456") # 256MB mmap (Railway lite mode)
+            self.db.execute("PRAGMA query_only=ON")       # Read-only on Railway
         self.db.execute("PRAGMA temp_store=MEMORY")    # Temp tables in RAM
         self.db.execute("PRAGMA optimize")              # OPT-011: Re-analyze table statistics
         self._write_lock = threading.Lock()  # B10: serialize writes
-        self._pool = ConnectionPool(db_path, size=16)  # OPT-009: parallel scoring pool (5 per query × 3 concurrent)
+        _pool_size = 16 if _GPU_ENABLED else 4  # OPT-009: smaller pool on Railway
+        self._pool = ConnectionPool(db_path, size=_pool_size)
         self._init_schema()
 
         # Phase B1-Step1: Context result cache (TTL-based)
@@ -4298,6 +4317,9 @@ _backup_task: asyncio.Task | None = None
 
 async def auto_backup_loop():
     """Periodically backup the RAMDisk database to disk. OPT-028: Non-blocking."""
+    if BACKUP_INTERVAL <= 0:
+        logger.info("Auto-backup disabled (interval_seconds=0)")
+        return
     while True:
         await asyncio.sleep(BACKUP_INTERVAL)
         try:
@@ -4714,7 +4736,10 @@ async def lifespan(app: FastAPI):
     logger.info(f"Database: {DB_PATH}")
     mem = get_memory()  # Force init
     mem._cleanup_ppr_cache()  # Phase 2: clear stale PPR cache on startup
-    _backup_task = asyncio.create_task(auto_backup_loop())
+    if BACKUP_INTERVAL > 0:
+        _backup_task = asyncio.create_task(auto_backup_loop())
+    else:
+        logger.info("Auto-backup task skipped (interval_seconds=0)")
     _bg_stats_task = asyncio.create_task(_background_stats_loop())  # OPT-024
 
     # Start file watcher
