@@ -95,6 +95,7 @@ async function* createDeepInfraStream(messages, opts = {}) {
 
 // ─── Express App ──────────────────────────────────────────────────────────────
 const app = express();
+app.set('trust proxy', 1); // Railway runs behind a reverse proxy
 
 applySecurityMiddleware(app);
 
