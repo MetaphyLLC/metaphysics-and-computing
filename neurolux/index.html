@@ -400,11 +400,15 @@ class ForceSimulation {
     this.nodes = [];       // [{id, x, y, z, vx, vy, vz, fx, fy, fz, mass}]
     this.edges = [];       // [{source, target, restLength, springK}]
     this.nodeMap = new Map();
-    this.repulsion = 8000;
+    this.connectedNodes = new Set(); // nodes with at least one edge
+    this.repulsion = 1500;
     this.damping = 0.92;
-    this.centerGravity = 0.001;
+    this.centerGravity = 0.012;
     this.theta = 0.7;      // Barnes-Hut approximation ratio
     this.active = true;
+    this.maxVelocity = 8;  // velocity cap per axis
+    this.boundaryRadius = 180; // soft boundary sphere
+    this._age = 0;         // simulation age in seconds (for cooling)
     this._tmpVec = { x: 0, y: 0, z: 0 };
   }
 
@@ -428,7 +432,15 @@ class ForceSimulation {
       restLength /= Math.sqrt(w);
       return { source: e.source, target: e.target, restLength, springK: 0.04 };
     });
-    console.log(`ForceSimulation initialized: ${this.nodes.length} nodes, ${this.edges.length} edges`);
+
+    // Build connected-node index
+    this.connectedNodes.clear();
+    this.edges.forEach(e => {
+      this.connectedNodes.add(e.source);
+      this.connectedNodes.add(e.target);
+    });
+    this._age = 0;
+    console.log(`ForceSimulation initialized: ${this.nodes.length} nodes, ${this.edges.length} edges, ${this.connectedNodes.size} connected`);
   }
 
   _parseImportance(imp) {
@@ -441,6 +453,11 @@ class ForceSimulation {
   simulate(dt) {
     if (!this.active || this.nodes.length === 0) return;
     dt = Math.min(dt, 0.033); // Cap dt to prevent spiral of death
+    this._age += dt;
+
+    // Cooling: high damping early, settles to target over 4 seconds
+    const coolProgress = Math.min(1, this._age / 4);
+    const effectiveDamping = 0.99 - (0.99 - this.damping) * coolProgress;
 
     // Reset forces
     for (let i = 0; i < this.nodes.length; i++) {
@@ -456,14 +473,21 @@ class ForceSimulation {
     // 3. Center gravity
     this._computeGravity();
 
-    // 4. Integration (Velocity Verlet)
-    const damping = this.damping;
+    // 4. Boundary constraint (soft sphere)
+    this._computeBoundary();
+
+    // 5. Integration with cooling + velocity cap
+    const maxV = this.maxVelocity;
     for (let i = 0; i < this.nodes.length; i++) {
       const n = this.nodes[i];
       const invMass = 1 / n.mass;
-      n.vx = (n.vx + n.fx * invMass * dt) * damping;
-      n.vy = (n.vy + n.fy * invMass * dt) * damping;
-      n.vz = (n.vz + n.fz * invMass * dt) * damping;
+      n.vx = (n.vx + n.fx * invMass * dt) * effectiveDamping;
+      n.vy = (n.vy + n.fy * invMass * dt) * effectiveDamping;
+      n.vz = (n.vz + n.fz * invMass * dt) * effectiveDamping;
+      // Velocity cap
+      n.vx = Math.max(-maxV, Math.min(maxV, n.vx));
+      n.vy = Math.max(-maxV, Math.min(maxV, n.vy));
+      n.vz = Math.max(-maxV, Math.min(maxV, n.vz));
       n.x += n.vx * dt;
       n.y += n.vy * dt;
       n.z += n.vz * dt;
@@ -600,9 +624,27 @@ class ForceSimulation {
   _computeGravity() {
     const g = this.centerGravity;
     for (const n of this.nodes) {
-      n.fx -= n.x * g * n.mass;
-      n.fy -= n.y * g * n.mass;
-      n.fz -= n.z * g * n.mass;
+      // Disconnected nodes get 5x stronger gravity to stay in the neighborhood
+      const mult = this.connectedNodes.has(n.id) ? 1 : 5;
+      n.fx -= n.x * g * n.mass * mult;
+      n.fy -= n.y * g * n.mass * mult;
+      n.fz -= n.z * g * n.mass * mult;
+    }
+  }
+
+  _computeBoundary() {
+    const r = this.boundaryRadius;
+    const rSq = r * r;
+    for (const n of this.nodes) {
+      const distSq = n.x * n.x + n.y * n.y + n.z * n.z;
+      if (distSq > rSq) {
+        const dist = Math.sqrt(distSq);
+        const overshoot = dist - r;
+        const strength = 0.5 * overshoot; // Quadratic push-back
+        n.fx -= (n.x / dist) * strength;
+        n.fy -= (n.y / dist) * strength;
+        n.fz -= (n.z / dist) * strength;
+      }
     }
   }
 
