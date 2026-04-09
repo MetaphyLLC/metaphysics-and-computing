@@ -604,11 +604,15 @@ class UnifiedMemory:
             self.db.execute("PRAGMA mmap_size=268435456") # 256MB mmap (Railway lite mode)
             self.db.execute("PRAGMA query_only=ON")       # Read-only on Railway
         self.db.execute("PRAGMA temp_store=MEMORY")    # Temp tables in RAM
-        self.db.execute("PRAGMA optimize")              # OPT-011: Re-analyze table statistics
+        if _GPU_ENABLED:
+            self.db.execute("PRAGMA optimize")          # OPT-011: Re-analyze table statistics (skip on read-only)
         self._write_lock = threading.Lock()  # B10: serialize writes
         _pool_size = 16 if _GPU_ENABLED else 4  # OPT-009: smaller pool on Railway
         self._pool = ConnectionPool(db_path, size=_pool_size)
-        self._init_schema()
+        if _GPU_ENABLED:
+            self._init_schema()
+        else:
+            logger.info("Railway lite mode: skipping schema init (query_only=ON)")
 
         # Phase B1-Step1: Context result cache (TTL-based)
         self._context_cache: dict[tuple, tuple[float, str]] = {}
