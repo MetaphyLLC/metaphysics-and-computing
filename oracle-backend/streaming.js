@@ -17,6 +17,9 @@ const FLUSH_WORD_COUNT = 30;
  */
 function normalizeTtsText(text) {
   return text
+    // Strip any leaked <think> blocks (safety net for cross-chunk splits)
+    .replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/<[^>]+>/g, '')                   // Strip any remaining HTML tags
     // Brand pronunciation for natural TTS speech
     .replace(/\bMetaphy\b/gi, 'Meta-fye')     // "MET-uh-fye" (rhymes with Wi-Fi)
     .replace(/\bQEGG\b/g, 'Kegg')             // Pronounced "Kegg" (keg + egg, hard K)
@@ -24,10 +27,18 @@ function normalizeTtsText(text) {
     .replace(/\bHMSS\b/g, 'H.M.S.S.')
     .replace(/\bBCPS\b/g, 'B.C.P.S.')
     .replace(/\bUAIMC\b/g, 'you-ay-eye-em-see')
+    .replace(/\bCANS\b/g, 'cans')             // Prevent spelling out as C-A-N-S
+    .replace(/\bNEUROLUX\b/g, 'Neuro-lux')    // "NOOR-oh-lux"
     // Strip markdown that TTS would read aloud
     .replace(/\*\*([^*]+)\*\*/g, '$1')   // **bold**
     .replace(/\*([^*]+)\*/g, '$1')       // *italic*
     .replace(/`([^`]+)`/g, '$1')         // `code`
+    .replace(/^#{1,6}\s+/gm, '')         // # headings
+    .replace(/^>\s+/gm, '')              // > blockquotes
+    .replace(/^[-*+]\s+/gm, '')          // - bullet points
+    .replace(/^\d+\.\s+/gm, '')          // 1. numbered lists
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [link text](url) → link text
+    .replace(/---+/g, '')                // horizontal rules
     .replace(/—/g, ', ')                 // em-dash → pause
     .replace(/\s+/g, ' ')
     .trim();
@@ -77,6 +88,24 @@ async function attemptTts(client, model, voice, text) {
       return { success: false, message: err.message };
     }
   }
+}
+
+/**
+ * Flush buffer at the last word boundary to avoid sending partial words to TTS.
+ * Returns the portion to flush and the remainder (partial last word) to keep.
+ * @param {string} buffer - Current accumulation buffer
+ * @returns {{ flushed: string|null, remainder: string }}
+ */
+function flushAtWordBoundary(buffer) {
+  const trimmed = buffer.trimStart();
+  const lastSpace = trimmed.lastIndexOf(' ');
+  if (lastSpace === -1) {
+    // Buffer is a single (possibly partial) word — don't flush yet
+    return { flushed: null, remainder: buffer };
+  }
+  const flushed = trimmed.slice(0, lastSpace).trim();
+  const remainder = trimmed.slice(lastSpace + 1);
+  return { flushed: flushed || null, remainder };
 }
 
 /**
@@ -172,32 +201,36 @@ async function* sentenceBufferedStream(llmStream, ttsClient, voice = 'af_bella',
     // Timeout flush: if buffer has content and 2s elapsed without yielding
     const bufferWordCount = outputBuffer.trim().split(/\s+/).filter(Boolean).length;
     if (outputBuffer.length > 20 && Date.now() - lastYieldTime > FLUSH_TIMEOUT_MS) {
-      const flushed = outputBuffer.trim();
-      outputBuffer = '';
-      yield { type: 'text', content: flushed };
-      lastYieldTime = Date.now();
+      const { flushed, remainder } = flushAtWordBoundary(outputBuffer);
+      outputBuffer = remainder;
+      if (flushed) {
+        yield { type: 'text', content: flushed };
+        lastYieldTime = Date.now();
 
-      if (ttsClient) {
-        const result = await attemptTts(ttsClient, ttsModel, voice, flushed);
-        if (result.success) {
-          yield { type: 'audio', data: result.data };
-        } else {
-          yield { type: 'tts_error', message: result.message };
+        if (ttsClient) {
+          const result = await attemptTts(ttsClient, ttsModel, voice, flushed);
+          if (result.success) {
+            yield { type: 'audio', data: result.data };
+          } else {
+            yield { type: 'tts_error', message: result.message };
+          }
         }
       }
     } else if (bufferWordCount >= FLUSH_WORD_COUNT) {
       // Word-count flush: too many words without a sentence boundary
-      const flushed = outputBuffer.trim();
-      outputBuffer = '';
-      yield { type: 'text', content: flushed };
-      lastYieldTime = Date.now();
+      const { flushed, remainder } = flushAtWordBoundary(outputBuffer);
+      outputBuffer = remainder;
+      if (flushed) {
+        yield { type: 'text', content: flushed };
+        lastYieldTime = Date.now();
 
-      if (ttsClient) {
-        const result = await attemptTts(ttsClient, ttsModel, voice, flushed);
-        if (result.success) {
-          yield { type: 'audio', data: result.data };
-        } else {
-          yield { type: 'tts_error', message: result.message };
+        if (ttsClient) {
+          const result = await attemptTts(ttsClient, ttsModel, voice, flushed);
+          if (result.success) {
+            yield { type: 'audio', data: result.data };
+          } else {
+            yield { type: 'tts_error', message: result.message };
+          }
         }
       }
     }

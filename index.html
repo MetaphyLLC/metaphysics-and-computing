@@ -1655,6 +1655,11 @@ document.addEventListener('DOMContentLoaded', () => {
     enableMockMode: false
   });
   window.oracle.render();
+
+  // Auto-open Oracle panel if linked from Neurolux (?oracle=open)
+  if (new URLSearchParams(window.location.search).get('oracle') === 'open') {
+    setTimeout(() => window.oracle.togglePanel(), 600);
+  }
 });
 
 </script>
