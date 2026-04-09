@@ -97,6 +97,73 @@ kbd{display:inline-block;padding:1px 6px;background:rgba(251,248,243,.08);border
   #controls{display:none}
   #search-container{width:92vw;bottom:14px}
 }
+
+/* ─── Oracle Chat Integration ─── */
+.oracle-orb{position:fixed;bottom:120px;right:24px;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#3D8C8C,#0A0E17);box-shadow:0 0 20px rgba(61,140,140,.4),0 0 60px rgba(61,140,140,.1);cursor:pointer;z-index:20;display:flex;align-items:center;justify-content:center;transition:all .4s cubic-bezier(.4,0,.2,1);animation:orbFloat 6s ease-in-out infinite,orbPulse 4s ease-in-out infinite}
+.oracle-orb svg{width:28px;height:28px;opacity:.8;filter:drop-shadow(0 0 4px rgba(61,140,140,.5));animation:orbRotate 20s linear infinite}
+.oracle-orb:hover{transform:scale(1.12);box-shadow:0 0 30px rgba(61,140,140,.6),0 0 80px rgba(61,140,140,.15)}
+.oracle-orb.listening{width:70px;height:70px;background:radial-gradient(circle at 35% 35%,#4FAEAE,#1a3a3a);box-shadow:0 0 40px rgba(61,140,140,.5);animation:orbFloat 6s ease-in-out infinite,orbListening 2s ease-in-out infinite}
+.oracle-orb.thinking{background:radial-gradient(circle at 35% 35%,var(--amber),#2a1a00);box-shadow:0 0 30px rgba(212,148,60,.5);animation:orbFloat 6s ease-in-out infinite,orbPulse 1.5s ease-in-out infinite}
+.oracle-orb.speaking{background:radial-gradient(circle at 35% 35%,var(--amber),#3D8C8C);box-shadow:0 0 35px rgba(212,148,60,.4);animation:orbFloat 6s ease-in-out infinite,orbSpeaking .4s ease-in-out infinite}
+.oracle-orb.offline{filter:grayscale(.7);opacity:.5;animation:orbFloat 6s ease-in-out infinite}
+.oracle-orb.panel-open{transform:scale(.85);opacity:.5}
+.oracle-panel{position:fixed;top:50px;right:0;width:380px;height:calc(100vh - 50px);background:rgba(10,14,23,.96);border-left:1px solid var(--border);backdrop-filter:blur(20px);z-index:18;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.oracle-panel.open{transform:translateX(0)}
+.oracle-panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.oracle-panel-header h2{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--teal);letter-spacing:.06em}
+.oracle-panel-header .oracle-btns{display:flex;gap:6px}
+.oracle-panel-header button{background:none;border:1px solid rgba(61,140,140,.3);color:var(--gold);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;transition:all .2s;opacity:.6}
+.oracle-panel-header button:hover{opacity:1;border-color:var(--teal);background:rgba(61,140,140,.1)}
+.oracle-messages{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:.7rem}
+.oracle-msg{display:flex;gap:8px;animation:msgFade .3s ease-out}
+.oracle-msg-indicator{width:3px;border-radius:2px;flex-shrink:0;min-height:20px}
+.oracle-msg-ai .oracle-msg-indicator{background:var(--teal)}
+.oracle-msg-user .oracle-msg-indicator{background:var(--amber)}
+.oracle-msg-content{font-size:.8rem;line-height:1.6;color:var(--gold);opacity:.9}
+.oracle-msg-user .oracle-msg-content{opacity:.7}
+.oracle-thinking{display:flex;gap:4px;padding:8px 0}
+.oracle-thinking span{width:6px;height:6px;border-radius:50%;background:var(--teal);animation:thinkBounce 1.4s ease-in-out infinite}
+.oracle-thinking span:nth-child(2){animation-delay:.2s}
+.oracle-thinking span:nth-child(3){animation-delay:.4s}
+.oracle-cursor{display:inline-block;width:2px;height:1em;background:var(--teal);margin-left:2px;animation:cursorBlink 1s step-end infinite;vertical-align:text-bottom}
+.oracle-input-area{border-top:1px solid var(--border);padding:12px 14px;flex-shrink:0}
+.oracle-input-row{display:flex;gap:8px;align-items:center}
+.oracle-waveform{height:0;overflow:hidden;transition:height .2s}
+.oracle-waveform.active{height:32px;margin-bottom:8px}
+.oracle-waveform canvas{width:100%;height:32px;opacity:.6}
+.oracle-mic-btn{width:36px;height:36px;border-radius:50%;background:rgba(61,140,140,.15);border:1px solid rgba(61,140,140,.3);color:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.oracle-mic-btn:hover{background:rgba(61,140,140,.25)}
+.oracle-mic-btn.recording{background:rgba(212,148,60,.25);border-color:var(--amber);color:var(--amber);animation:micPulse 1.5s ease-in-out infinite}
+.oracle-mic-btn.unsupported{opacity:.3;cursor:not-allowed}
+.oracle-text-input{flex:1;background:rgba(251,248,243,.05);border:1px solid rgba(251,248,243,.12);border-radius:6px;padding:8px 12px;color:var(--gold);font-family:'Inter',sans-serif;font-size:.8rem;outline:none;transition:border-color .2s}
+.oracle-text-input:focus{border-color:var(--teal)}
+.oracle-text-input::placeholder{color:rgba(251,248,243,.25)}
+.oracle-send-btn{width:36px;height:36px;border-radius:50%;background:rgba(61,140,140,.15);border:1px solid rgba(61,140,140,.3);color:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;opacity:.4}
+.oracle-send-btn.active{opacity:1;background:rgba(61,140,140,.25)}
+.oracle-send-btn:hover{background:rgba(61,140,140,.3)}
+.oracle-status{text-align:center;padding:4px;font-size:.6rem;letter-spacing:.08em;color:var(--teal);opacity:.5;text-transform:uppercase;flex-shrink:0}
+.oracle-bubble{position:fixed;bottom:180px;right:24px;background:rgba(61,140,140,.15);border:1px solid rgba(61,140,140,.3);color:var(--gold);padding:10px 16px;border-radius:12px 12px 4px 12px;font-size:.75rem;z-index:19;opacity:0;transform:translateY(8px);transition:all .4s;backdrop-filter:blur(8px);pointer-events:none}
+.oracle-bubble.visible{opacity:1;transform:translateY(0)}
+@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes orbPulse{0%,100%{box-shadow:0 0 20px rgba(61,140,140,.4),0 0 60px rgba(61,140,140,.1)}50%{box-shadow:0 0 30px rgba(61,140,140,.5),0 0 80px rgba(61,140,140,.15)}}
+@keyframes orbListening{0%,100%{box-shadow:0 0 30px rgba(61,140,140,.4)}50%{box-shadow:0 0 50px rgba(61,140,140,.6),0 0 100px rgba(61,140,140,.2)}}
+@keyframes orbSpeaking{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes orbRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes cursorBlink{50%{opacity:0}}
+@keyframes msgFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes thinkBounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(212,148,60,.3)}50%{box-shadow:0 0 0 8px rgba(212,148,60,0)}}
+@media(max-width:640px){
+  .oracle-orb{bottom:80px;left:50%;right:auto;transform:translateX(-50%);width:48px;height:48px}
+  .oracle-orb.panel-open{transform:translateX(-50%) scale(.85)}
+  .oracle-panel{width:100%;top:auto;bottom:0;height:65vh;border-left:none;border-top:1px solid var(--border);border-radius:12px 12px 0 0}
+  .oracle-bubble{left:50%;right:auto;transform:translateX(-50%) translateY(8px);bottom:140px}
+  .oracle-bubble.visible{transform:translateX(-50%) translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  .oracle-orb,.oracle-orb.listening,.oracle-orb.thinking,.oracle-orb.speaking{animation:none}
+  .oracle-orb svg{animation:none}
+}
 </style>
 </head>
 <body>
@@ -111,7 +178,7 @@ kbd{display:inline-block;padding:1px 6px;background:rgba(251,248,243,.08);border
   <h1>NEUROLUX<span>CANS Neural Architecture Visualization</span></h1>
   <div class="header-links">
     <a href="https://www.metaphysicsandcomputing.com">← Main Site</a>
-    <a href="https://www.metaphysicsandcomputing.com/?oracle=open" class="btn-oracle">Ask The Oracle</a>
+    <button class="btn-oracle" id="btn-ask-oracle">Ask The Oracle</button>
   </div>
 </div>
 
@@ -727,7 +794,8 @@ let hoveredMesh = null;
 
 function onPointerDown(e) {
   if (e.target.closest('#info-panel') || e.target.closest('#search-container') ||
-      e.target.closest('#header') || e.target.closest('#controls') || e.target.closest('#legend')) return;
+      e.target.closest('#header') || e.target.closest('#controls') || e.target.closest('#legend') ||
+      e.target.closest('.oracle-panel') || e.target.closest('.oracle-orb')) return;
 
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -794,7 +862,12 @@ function selectNode(nodeId) {
     controls.target.lerp(mesh.position, 0.3);
   }
 
-  showInfoPanel(node);
+  // Clear Oracle highlight when user manually selects a node
+  oracleHighlightNodes.clear();
+
+  if (!window.neuroluxOracle || !window.neuroluxOracle.panelOpen) {
+    showInfoPanel(node);
+  }
 
   nodeMeshMap.forEach((m, id) => {
     if (m.material) m.material.opacity = (id === nodeId) ? 1.0 : 0.4;
@@ -1002,7 +1075,7 @@ function updateLOD() {
 
 // ─── Keyboard ───────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
-  if (e.target === searchInput) return;
+  if (e.target === searchInput || e.target.classList?.contains('oracle-text-input')) return;
 
   if (e.key === '/') {
     e.preventDefault();
@@ -1011,6 +1084,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     toggleSearch(false);
     closePanel();
+    if (window.neuroluxOracle && window.neuroluxOracle.panelOpen) window.neuroluxOracle.togglePanel();
   }
   if (e.key === 'r' || e.key === 'R') {
     camera.position.set(0, 80, 250);
@@ -1096,8 +1170,585 @@ function animate() {
   // LOD update every 10 frames
   if (frameCount % 10 === 0) updateLOD();
 
+  // Oracle highlight pulse
+  updateOracleHighlight(t);
+
   controls.update();
   renderer.render(scene, camera);
+}
+
+// ─── Oracle Chat Integration ────────────────────────────
+class NeuroluxOracle {
+  constructor(config) {
+    this.config = {
+      restUrl: config.restUrl || `${API_BASE}/api/chat`,
+      healthUrl: config.healthUrl || `${API_BASE}/api/health`,
+      maxMessageLength: config.maxMessageLength || 1000,
+      enableMockMode: config.enableMockMode ?? false
+    };
+    this.state = 'idle';
+    this.panelOpen = false;
+    this.backendAvailable = false;
+    this.messages = [];
+    this.audioQueue = [];
+    this.audioContext = null;
+    this.currentSource = null;
+    this.isPlayingAudio = false;
+    this.isRecording = false;
+    this.recognition = null;
+    this.streamAbort = null;
+    this.sessionId = 'nlx_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    this.lastUserQuery = '';
+    this.els = {};
+  }
+
+  setState(s) {
+    this.state = s;
+    if (!this.els.orb) return;
+    this.els.orb.className = 'oracle-orb' + (s !== 'idle' ? ' ' + s : '') + (this.panelOpen ? ' panel-open' : '');
+    if (this.els.status) {
+      const labels = { idle: 'Ready', listening: 'Listening...', thinking: 'Thinking...', speaking: 'Speaking...', offline: 'Offline' };
+      this.els.status.textContent = labels[s] || '';
+    }
+  }
+
+  render() {
+    // Orb
+    const orb = document.createElement('div');
+    orb.className = 'oracle-orb';
+    orb.innerHTML = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="45" stroke="rgba(61,140,140,0.6)" stroke-width="0.8"/>
+      <circle cx="50" cy="50" r="30" stroke="rgba(61,140,140,0.4)" stroke-width="0.6"/>
+      <circle cx="50" cy="50" r="15" stroke="rgba(61,140,140,0.3)" stroke-width="0.5"/>
+      <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(61,140,140,0.2)" stroke-width="0.4"/>
+      <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(61,140,140,0.2)" stroke-width="0.4"/>
+      <line x1="15" y1="15" x2="85" y2="85" stroke="rgba(61,140,140,0.15)" stroke-width="0.4"/>
+      <line x1="85" y1="15" x2="15" y2="85" stroke="rgba(61,140,140,0.15)" stroke-width="0.4"/>
+      <circle cx="50" cy="50" r="4" fill="rgba(61,140,140,0.8)"/>
+    </svg>`;
+    document.body.appendChild(orb);
+
+    // Panel
+    const panel = document.createElement('div');
+    panel.className = 'oracle-panel';
+    panel.innerHTML = `
+      <div class="oracle-panel-header">
+        <h2>\u2726 THE ORACLE</h2>
+        <div class="oracle-btns">
+          <button class="oracle-visualize" title="Highlight in 3D">\u25CE</button>
+          <button class="oracle-close" title="Close">\u2715</button>
+        </div>
+      </div>
+      <div class="oracle-messages"></div>
+      <div class="oracle-input-area">
+        <div class="oracle-waveform"><canvas></canvas></div>
+        <div class="oracle-input-row">
+          <button class="oracle-mic-btn" title="Hold to speak">\uD83C\uDFA4</button>
+          <input type="text" class="oracle-text-input" placeholder="Ask The Oracle..." maxlength="${this.config.maxMessageLength}" autocomplete="off">
+          <button class="oracle-send-btn" title="Send">\u27A4</button>
+        </div>
+      </div>
+      <div class="oracle-status"></div>
+    `;
+    document.body.appendChild(panel);
+
+    this.els = {
+      orb, panel,
+      messages: panel.querySelector('.oracle-messages'),
+      textInput: panel.querySelector('.oracle-text-input'),
+      sendBtn: panel.querySelector('.oracle-send-btn'),
+      micBtn: panel.querySelector('.oracle-mic-btn'),
+      status: panel.querySelector('.oracle-status'),
+      waveform: panel.querySelector('.oracle-waveform'),
+      waveCanvas: panel.querySelector('.oracle-waveform canvas'),
+      close: panel.querySelector('.oracle-close'),
+      visualize: panel.querySelector('.oracle-visualize')
+    };
+
+    this._bindEvents();
+    this._checkHealth();
+    this._initSpeechRecognition();
+    this._appendMessage('ai', 'Welcome to Neurolux. I\u2019m The Oracle \u2014 ask me anything and watch the neural map light up with my thoughts.');
+    this._healthInterval = setInterval(() => this._checkHealth(), 30000);
+
+    // First-visit bubble
+    if (!sessionStorage.getItem('neurolux_oracle_visited')) {
+      sessionStorage.setItem('neurolux_oracle_visited', '1');
+      setTimeout(() => {
+        if (this.panelOpen) return;
+        const bubble = document.createElement('div');
+        bubble.className = 'oracle-bubble';
+        bubble.textContent = 'Ask me anything \u2014 watch my mind light up.';
+        document.body.appendChild(bubble);
+        requestAnimationFrame(() => requestAnimationFrame(() => bubble.classList.add('visible')));
+        setTimeout(() => { bubble.classList.remove('visible'); setTimeout(() => bubble.remove(), 500); }, 5000);
+      }, 3000);
+    }
+  }
+
+  _bindEvents() {
+    this.els.orb.addEventListener('click', () => this.togglePanel());
+    this.els.close.addEventListener('click', () => this.togglePanel());
+
+    // Visualize button — highlight 3D graph with last query
+    this.els.visualize.addEventListener('click', () => {
+      if (this.lastUserQuery) highlightForOracle(this.lastUserQuery);
+    });
+
+    // Text input
+    this.els.textInput.addEventListener('input', () => {
+      this.els.sendBtn.classList.toggle('active', this.els.textInput.value.trim().length > 0);
+    });
+    this.els.textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._sendFromInput(); }
+    });
+    this.els.sendBtn.addEventListener('click', () => this._sendFromInput());
+
+    // Mic (push-to-talk)
+    const micDown = () => { if (!this.els.micBtn.classList.contains('unsupported')) this.startListening(); };
+    const micUp = () => { if (this.isRecording) this.stopListening(); };
+    this.els.micBtn.addEventListener('mousedown', micDown);
+    this.els.micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); micDown(); });
+    document.addEventListener('mouseup', micUp);
+    document.addEventListener('touchend', micUp);
+
+    // Close bubble on scroll
+    window.addEventListener('scroll', () => {
+      const bubble = document.querySelector('.oracle-bubble');
+      if (bubble) bubble.remove();
+    }, { once: true });
+  }
+
+  togglePanel() {
+    this.panelOpen = !this.panelOpen;
+    this.els.panel.classList.toggle('open', this.panelOpen);
+    this.els.orb.classList.toggle('panel-open', this.panelOpen);
+
+    const bubble = document.querySelector('.oracle-bubble');
+    if (bubble) bubble.remove();
+
+    if (this.panelOpen) {
+      closePanel(); // Close node info panel
+      if (!this.audioContext) this._initAudioContext();
+      setTimeout(() => this.els.textInput.focus(), 350);
+      this.els.messages.scrollTop = this.els.messages.scrollHeight;
+    } else {
+      this.stopAudio();
+      if (this.isRecording) this.stopListening();
+      this.setState('idle');
+    }
+  }
+
+  _sendFromInput() {
+    const text = this.els.textInput.value.trim();
+    if (!text || this.state === 'thinking' || this.state === 'speaking') return;
+    this.els.textInput.value = '';
+    this.els.sendBtn.classList.remove('active');
+    this.sendMessage(text);
+  }
+
+  async sendMessage(text) {
+    if (!text || text.length > this.config.maxMessageLength) return;
+    this.lastUserQuery = text;
+    this._appendMessage('user', text);
+    this.stopAudio();
+
+    if (this.backendAvailable) {
+      await this._sendREST(text);
+    } else {
+      this._appendMessage('ai', 'The Oracle is currently offline. Please try again later.');
+    }
+  }
+
+  /* ─── REST NDJSON STREAMING ─── */
+  async _sendREST(text) {
+    this.setState('thinking');
+    const thinkingEl = this._showThinking();
+
+    if (this.streamAbort) this.streamAbort.abort();
+    this.streamAbort = new AbortController();
+
+    try {
+      const res = await fetch(this.config.restUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/x-ndjson' },
+        body: JSON.stringify({ message: text, sessionId: this.sessionId, page: 'Neurolux 3D Neural Map' }),
+        signal: this.streamAbort.signal
+      });
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      thinkingEl.remove();
+      let msgEl = null;
+      let fullText = '';
+      let unspokenText = '';
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+
+            if (data.type === 'text') {
+              if (!msgEl) msgEl = this._appendMessage('ai', '', true);
+              fullText += data.content + ' ';
+              unspokenText += data.content + ' ';
+              this._streamText(msgEl, data.content + ' ');
+              this.setState('speaking');
+            }
+
+            if (data.type === 'audio' && data.data) {
+              this._queueAudio(data.data);
+              unspokenText = '';
+            }
+
+            if (data.type === 'tts_error' && unspokenText.trim()) {
+              this._speakFallback(unspokenText.trim());
+              unspokenText = '';
+            }
+
+            if (data.type === 'done') {
+              if (unspokenText.trim()) { this._speakFallback(unspokenText.trim()); unspokenText = ''; }
+              this._finalizeStream(msgEl);
+              // \u2605 THE JAW-DROP: Highlight 3D graph with the user's question
+              highlightForOracle(text);
+            }
+          } catch (e) { /* skip malformed */ }
+        }
+      }
+
+      if (unspokenText.trim()) this._speakFallback(unspokenText.trim());
+      if (msgEl) this._finalizeStream(msgEl);
+      if (!fullText) {
+        this._appendMessage('ai', 'I received your message but had trouble forming a response. Please try again.');
+      }
+
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      thinkingEl.remove();
+      console.warn('Oracle REST error:', err);
+      this._appendMessage('ai', 'Connection lost. Please try again in a moment.');
+      this.setState('idle');
+    }
+  }
+
+  _showThinking() {
+    const el = document.createElement('div');
+    el.className = 'oracle-msg oracle-msg-ai';
+    el.innerHTML = '<div class="oracle-msg-indicator"></div><div class="oracle-thinking"><span></span><span></span><span></span></div>';
+    this.els.messages.appendChild(el);
+    this.els.messages.scrollTop = this.els.messages.scrollHeight;
+    return el;
+  }
+
+  _streamText(msgEl, text) {
+    const content = msgEl.querySelector('.oracle-msg-content');
+    const cursor = content.querySelector('.oracle-cursor');
+    if (cursor) cursor.remove();
+    content.insertAdjacentText('beforeend', text);
+    const c = document.createElement('span');
+    c.className = 'oracle-cursor';
+    content.appendChild(c);
+    this.els.messages.scrollTop = this.els.messages.scrollHeight;
+  }
+
+  _finalizeStream(msgEl) {
+    if (!msgEl) return;
+    const cursor = msgEl.querySelector('.oracle-cursor');
+    if (cursor) cursor.remove();
+    if (!this.isPlayingAudio) this.setState('idle');
+  }
+
+  /* ─── AUDIO ─── */
+  _initAudioContext() {
+    try { this.audioContext = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  }
+
+  _queueAudio(base64Data) {
+    this.audioQueue.push(base64Data);
+    if (!this.isPlayingAudio) this._playNextAudio();
+  }
+
+  async _playNextAudio() {
+    if (this.audioQueue.length === 0) {
+      this.isPlayingAudio = false;
+      if (this.state === 'speaking') this.setState('idle');
+      return;
+    }
+    this.isPlayingAudio = true;
+    this.setState('speaking');
+    const base64 = this.audioQueue.shift();
+    try {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const audioBuffer = await this.audioContext.decodeAudioData(bytes.buffer);
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      const gain = this.audioContext.createGain();
+      const fade = 0.02;
+      if (audioBuffer.duration > fade * 2) {
+        gain.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gain.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + fade);
+        gain.gain.setValueAtTime(1, this.audioContext.currentTime + audioBuffer.duration - fade);
+        gain.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + audioBuffer.duration);
+      }
+      source.connect(gain);
+      gain.connect(this.audioContext.destination);
+      this.currentSource = source;
+      source.onended = () => { this.currentSource = null; this._playNextAudio(); };
+      source.start();
+    } catch (e) { this._playNextAudio(); }
+  }
+
+  stopAudio() {
+    this.audioQueue = [];
+    if (this.currentSource) { try { this.currentSource.stop(); } catch (e) {} this.currentSource = null; }
+    this.isPlayingAudio = false;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+  }
+
+  _speakFallback(text) {
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95; u.pitch = 1.0; u.lang = 'en-US';
+    this.setState('speaking');
+    u.onend = () => { if (this.state === 'speaking') this.setState('idle'); };
+    u.onerror = () => { if (this.state === 'speaking') this.setState('idle'); };
+    speechSynthesis.speak(u);
+  }
+
+  /* ─── SPEECH RECOGNITION ─── */
+  _initSpeechRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { this.els.micBtn.classList.add('unsupported'); return; }
+    this.recognition = new SR();
+    this.recognition.continuous = false;
+    this.recognition.interimResults = true;
+    this.recognition.lang = 'en-US';
+
+    this.recognition.onresult = (e) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      this.els.textInput.value = transcript;
+      this.els.sendBtn.classList.toggle('active', transcript.trim().length > 0);
+      if (e.results[e.results.length - 1].isFinal && transcript.trim()) {
+        this.stopListening();
+        this.els.textInput.value = '';
+        this.els.sendBtn.classList.remove('active');
+        this.sendMessage(transcript.trim());
+      }
+    };
+    this.recognition.onerror = () => this._stopRecordingUI();
+    this.recognition.onend = () => this._stopRecordingUI();
+  }
+
+  startListening() {
+    if (!this.recognition || this.state === 'thinking' || this.state === 'speaking') return;
+    this.stopAudio();
+    try {
+      this.recognition.start();
+      this.isRecording = true;
+      this.els.micBtn.classList.add('recording');
+      this.els.waveform.classList.add('active');
+      this.setState('listening');
+      this._startWaveformViz();
+      if (navigator.vibrate) navigator.vibrate(30);
+    } catch (e) {}
+  }
+
+  stopListening() {
+    if (!this.recognition) return;
+    try { this.recognition.stop(); } catch (e) {}
+    this._stopRecordingUI();
+  }
+
+  _stopRecordingUI() {
+    this.isRecording = false;
+    this.els.micBtn.classList.remove('recording');
+    this.els.waveform.classList.remove('active');
+    if (this._waveformRAF) cancelAnimationFrame(this._waveformRAF);
+    if (this.state === 'listening') this.setState('idle');
+  }
+
+  _startWaveformViz() {
+    const canvas = this.els.waveCanvas;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.parentElement.clientWidth;
+    canvas.width = W * 2; canvas.height = 64;
+    canvas.style.width = W + 'px';
+    const bars = 40, barW = (W * 2) / bars - 2;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < bars; i++) {
+        const h = this.isRecording ? (8 + Math.random() * 48) : 4;
+        ctx.fillStyle = 'rgba(61, 140, 140, 0.6)';
+        ctx.fillRect(i * (barW + 2), (64 - h) / 2, barW, h);
+      }
+      if (this.isRecording) this._waveformRAF = requestAnimationFrame(draw);
+    };
+    draw();
+  }
+
+  /* ─── MESSAGES ─── */
+  _appendMessage(role, text, streaming = false) {
+    const msg = document.createElement('div');
+    msg.className = 'oracle-msg oracle-msg-' + (role === 'ai' ? 'ai' : 'user');
+    msg.innerHTML = `<div class="oracle-msg-indicator"></div><div class="oracle-msg-content">${streaming ? '' : this._escapeHtml(text)}</div>`;
+    if (streaming) {
+      const cursor = document.createElement('span');
+      cursor.className = 'oracle-cursor';
+      msg.querySelector('.oracle-msg-content').appendChild(cursor);
+    }
+    this.els.messages.appendChild(msg);
+    this.els.messages.scrollTop = this.els.messages.scrollHeight;
+    this.messages.push({ role, text });
+    return msg;
+  }
+
+  _escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+  /* ─── HEALTH CHECK ─── */
+  async _checkHealth() {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(this.config.healthUrl, { signal: AbortSignal.timeout(3000) });
+        if (res.ok) { this.backendAvailable = true; this.setState('idle'); return; }
+      } catch (e) {}
+      if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+    }
+    this.backendAvailable = false;
+    this.setState('offline');
+    if (this.els.status) this.els.status.textContent = 'Oracle unavailable';
+  }
+}
+
+// ─── 3D Graph \u2194 Oracle Highlighting ─────────────────────
+let oracleHighlightNodes = new Set();
+let oracleHighlightStart = 0;
+const ORACLE_HIGHLIGHT_DURATION = 12; // seconds before fade
+
+async function highlightForOracle(query) {
+  if (!query) return;
+
+  let matchingNodeIds = [];
+
+  // Try API search first (LIVE mode), fall back to local
+  if (isLiveMode) {
+    try {
+      const resp = await fetch(`${API_BASE}/api/v1/3d-map/search?q=${encodeURIComponent(query)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        matchingNodeIds = (data.nodes || []).map(n => n.id);
+      }
+    } catch (e) {}
+  }
+
+  // Local fallback
+  if (matchingNodeIds.length === 0) {
+    const q = query.toLowerCase();
+    matchingNodeIds = allNodes
+      .filter(n =>
+        (n.label && n.label.toLowerCase().includes(q)) ||
+        (n.summary && n.summary.toLowerCase().includes(q))
+      )
+      .map(n => n.id);
+  }
+
+  if (matchingNodeIds.length === 0) return;
+
+  // Set highlight state
+  oracleHighlightNodes = new Set(matchingNodeIds);
+  oracleHighlightStart = clock.getElapsedTime();
+
+  // Dim non-matching, brighten matching
+  nodeMeshMap.forEach((mesh, nodeId) => {
+    if (oracleHighlightNodes.has(nodeId)) {
+      mesh.material.opacity = 1.0;
+      mesh.material.emissiveIntensity = 1.0;
+    } else {
+      mesh.material.opacity = 0.1;
+      mesh.material.emissiveIntensity = 0.1;
+    }
+  });
+
+  // Dim edges except those connecting highlighted nodes
+  edgeGroup.children.forEach(line => {
+    const eid = line.userData.edgeId || '';
+    const parts = eid.split('->');
+    const connected = parts.some(p => oracleHighlightNodes.has(p));
+    line.material.opacity = connected ? 0.5 : 0.02;
+  });
+
+  // Camera: fly toward centroid of highlighted nodes
+  const centroid = new THREE.Vector3();
+  let count = 0;
+  matchingNodeIds.forEach(nid => {
+    const mesh = nodeMeshMap.get(nid);
+    if (mesh) { centroid.add(mesh.position); count++; }
+  });
+  if (count > 0) {
+    centroid.divideScalar(count);
+    const targetPos = centroid.clone().add(new THREE.Vector3(40, 25, 50));
+    const startPos = camera.position.clone();
+    const startTarget = controls.target.clone();
+    let progress = 0;
+    const flyCamera = () => {
+      progress += 0.02;
+      if (progress > 1) progress = 1;
+      const ease = progress * progress * (3 - 2 * progress); // smoothstep
+      camera.position.lerpVectors(startPos, targetPos, ease);
+      controls.target.lerpVectors(startTarget, centroid, ease);
+      if (progress < 1) requestAnimationFrame(flyCamera);
+    };
+    flyCamera();
+  }
+}
+
+function updateOracleHighlight(t) {
+  if (oracleHighlightNodes.size === 0) return;
+
+  const elapsed = t - oracleHighlightStart;
+
+  // Pulse effect on highlighted nodes
+  const pulse = 0.7 + Math.sin(elapsed * 3) * 0.3;
+  oracleHighlightNodes.forEach(nodeId => {
+    const mesh = nodeMeshMap.get(nodeId);
+    if (mesh && mesh.material) {
+      mesh.material.emissiveIntensity = pulse;
+    }
+  });
+
+  // Fade out after duration
+  if (elapsed > ORACLE_HIGHLIGHT_DURATION) {
+    const fadeProgress = Math.min(1, (elapsed - ORACLE_HIGHLIGHT_DURATION) / 3); // 3s fade
+    if (fadeProgress >= 1) {
+      oracleHighlightNodes.clear();
+      deselectAll();
+    } else {
+      nodeMeshMap.forEach((mesh, nodeId) => {
+        if (oracleHighlightNodes.has(nodeId)) {
+          mesh.material.opacity = 1.0 - fadeProgress * 0.1;
+          mesh.material.emissiveIntensity = pulse * (1 - fadeProgress) + 0.35 * fadeProgress;
+        } else {
+          mesh.material.opacity = 0.1 + fadeProgress * 0.8;
+          mesh.material.emissiveIntensity = 0.1 + fadeProgress * 0.25;
+        }
+      });
+    }
+  }
 }
 
 // ─── Init ───────────────────────────────────────────────
@@ -1109,6 +1760,33 @@ async function init() {
   setTimeout(() => overlay.style.display = 'none', 900);
 
   animate();
+
+  // Initialize Oracle
+  window.neuroluxOracle = new NeuroluxOracle({
+    restUrl: `${API_BASE}/api/chat`,
+    healthUrl: `${API_BASE}/api/health`,
+    maxMessageLength: 1000,
+    enableMockMode: false
+  });
+  window.neuroluxOracle.render();
+
+  // Wire "Ask The Oracle" button
+  document.getElementById('btn-ask-oracle').addEventListener('click', () => {
+    window.neuroluxOracle.togglePanel();
+  });
+
+  // Auto-open Oracle if linked with ?oracle=open
+  if (params.get('oracle') === 'open') {
+    setTimeout(() => window.neuroluxOracle.togglePanel(), 800);
+  }
+
+  // If query came from main site Oracle "Visualize" button
+  if (QUERY_HIGHLIGHT && HIGHLIGHT_MODE && window.neuroluxOracle) {
+    setTimeout(() => {
+      window.neuroluxOracle.togglePanel();
+      highlightForOracle(QUERY_HIGHLIGHT);
+    }, 1500);
+  }
 }
 
 init();
