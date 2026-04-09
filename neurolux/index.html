@@ -184,6 +184,7 @@ kbd{display:inline-block;padding:1px 6px;background:rgba(251,248,243,.08);border
   <span><span class="status-dot demo" id="status-dot"></span><span id="status-text">DEMO MODE</span></span>
   <span id="node-count">Nodes: 0</span>
   <span id="edge-count">Edges: 0</span>
+  <span style="color:#d4943c;font-weight:bold">v3-storm</span>
 </div>
 
 <div id="info-panel">
@@ -401,7 +402,7 @@ class ForceSimulation {
     this.edges = [];       // [{source, target, restLength, springK}]
     this.nodeMap = new Map();
     this.connectedNodes = new Set(); // nodes with at least one edge
-    this.repulsion = 200;
+    this.repulsion = 500;
     this.damping = 0.88;
     this.centerGravity = 0.15;
     this.theta = 0.7;      // Barnes-Hut approximation ratio
@@ -410,6 +411,7 @@ class ForceSimulation {
     this.boundaryRadius = 60; // soft boundary sphere
     this._age = 0;         // simulation age in seconds (for cooling)
     this._tmpVec = { x: 0, y: 0, z: 0 };
+    console.log('[STORM v3] ForceSimulation constructed — repulsion=500, gravity=0.15, boundary=60');
   }
 
   init(nodes, edges) {
