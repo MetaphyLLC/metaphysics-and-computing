@@ -1658,39 +1658,123 @@ function clearStormEffects() {
     if (mesh) mesh.scale.setScalar(scale);
   });
   stormSavedScales.clear();
+  // Remove dynamically spawned storm nodes
+  nodeMeshMap.forEach((mesh, nodeId) => {
+    if (mesh.userData.dynamicStormNode) {
+      nodeGroup.remove(mesh);
+      if (mesh.geometry) mesh.geometry.dispose();
+      if (mesh.material) mesh.material.dispose();
+      nodeMeshMap.delete(nodeId);
+      // Remove label if exists
+      const label = labelSpriteMap.get(nodeId);
+      if (label) { labelGroup.remove(label); labelSpriteMap.delete(nodeId); }
+    }
+  });
+  allNodes = allNodes.filter(n => {
+    const m = nodeMeshMap.get(n.id);
+    return !m || !m.userData.dynamicStormNode;
+  });
+  // Restore all node opacities
+  nodeMeshMap.forEach((mesh) => {
+    if (mesh.material) {
+      mesh.material.opacity = 0.9;
+      mesh.material.emissiveIntensity = 0.35;
+    }
+  });
+  // Restore all edge opacities
+  edgeGroup.children.forEach(line => {
+    if (line.material) {
+      line.material.opacity = 0.15;
+      line.material.color.setHex(0x3d8c8c);
+    }
+  });
 }
 
 async function highlightForOracle(query) {
   if (!query) return;
 
-  let matchingNodeIds = [];
+  // Clear previous storm FIRST (removes old dynamic nodes + restores opacities)
+  clearStormEffects();
+  oracleHighlightNodes.clear();
 
-  // Try API search first (LIVE mode), fall back to local
+  const matchSet = new Set();
+  let apiSearchNodes = []; // Full search results for spawning dynamic nodes
+
+  // 1) API search
   if (isLiveMode) {
     try {
       const resp = await fetch(`${API_BASE}/api/v1/3d-map/search?q=${encodeURIComponent(query)}`);
       if (resp.ok) {
         const data = await resp.json();
-        matchingNodeIds = (data.nodes || []).map(n => n.id);
+        apiSearchNodes = data.nodes || [];
+        apiSearchNodes.forEach(n => {
+          if (nodeMeshMap.has(n.id)) matchSet.add(n.id);
+        });
       }
     } catch (e) {}
   }
 
-  // Local fallback
-  if (matchingNodeIds.length === 0) {
-    const q = query.toLowerCase();
-    matchingNodeIds = allNodes
-      .filter(n =>
-        (n.label && n.label.toLowerCase().includes(q)) ||
-        (n.summary && n.summary.toLowerCase().includes(q))
-      )
-      .map(n => n.id);
+  // 2) Local label/summary + ID matching to supplement API results
+  const q = query.toLowerCase();
+  const keywords = q.split(/\s+/).filter(w => w.length > 2);
+  allNodes.forEach(n => {
+    const label = (n.label || '').toLowerCase();
+    const summary = (n.summary || '').toLowerCase();
+    const idLower = (n.id || '').toLowerCase();
+    const haystack = label + ' ' + summary + ' ' + idLower;
+    if (haystack.includes(q) || keywords.some(kw => haystack.includes(kw))) {
+      matchSet.add(n.id);
+    }
+  });
+
+  // 3) Dynamically spawn search results that aren't on the map yet
+  const offMapNodes = apiSearchNodes.filter(n => !nodeMeshMap.has(n.id));
+  if (offMapNodes.length > 0) {
+    // Find a centroid for positioning — use existing matches or map center
+    const centroid = new THREE.Vector3();
+    let anchorCount = 0;
+    matchSet.forEach(id => {
+      const m = nodeMeshMap.get(id);
+      if (m) { centroid.add(m.position); anchorCount++; }
+    });
+    if (anchorCount > 0) {
+      centroid.divideScalar(anchorCount);
+    } else {
+      centroid.copy(controls.target);
+    }
+
+    // Spawn up to 25 dynamic nodes in a sphere around the centroid
+    const spawnLimit = Math.min(offMapNodes.length, 25);
+    for (let i = 0; i < spawnLimit; i++) {
+      const n = offMapNodes[i];
+      const phi = Math.acos(1 - 2 * (i + 0.5) / spawnLimit);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
+      const radius = 20 + Math.random() * 15;
+      const spawnNode = {
+        id: n.id,
+        label: n.label || 'Search Result',
+        type: n.type || 'concept',
+        importance: n.importance || 0.5,
+        x: centroid.x + radius * Math.sin(phi) * Math.cos(theta),
+        y: centroid.y + radius * Math.cos(phi),
+        z: centroid.z + radius * Math.sin(phi) * Math.sin(theta)
+      };
+      createNodeMesh(spawnNode);
+      allNodes.push(spawnNode);
+      matchSet.add(n.id);
+      // Tag as dynamic for cleanup
+      const mesh = nodeMeshMap.get(n.id);
+      if (mesh) mesh.userData.dynamicStormNode = true;
+    }
   }
 
-  if (matchingNodeIds.length === 0) return;
-
-  // Clear previous storm
-  clearStormEffects();
+  const matchingNodeIds = [...matchSet];
+  if (matchingNodeIds.length === 0) {
+    console.log('[Storm] No matches found for:', query);
+    return;
+  }
+  const spawned = Math.min(offMapNodes.length, 25);
+  console.log(`[Storm] Query "${query}" → ${matchingNodeIds.length} matches (${spawned > 0 ? spawned + ' spawned' : 'all on map'})`);
 
   // Set highlight state
   oracleHighlightNodes = new Set(matchingNodeIds);
