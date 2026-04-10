@@ -402,13 +402,13 @@ class ForceSimulation {
     this.edges = [];       // [{source, target, restLength, springK}]
     this.nodeMap = new Map();
     this.connectedNodes = new Set(); // nodes with at least one edge
-    this.repulsion = 800;
+    this.repulsion = 2500;
     this.damping = 0.88;
-    this.centerGravity = 0.15;
+    this.centerGravity = 0.025;
     this.theta = 0.7;      // Barnes-Hut approximation ratio
     this.active = true;
     this.maxVelocity = 20;  // velocity cap per axis
-    this.boundaryRadius = 60; // soft boundary sphere
+    this.boundaryRadius = 200; // soft boundary sphere
     this._age = 0;         // simulation age in seconds (for cooling)
     this._tmpVec = { x: 0, y: 0, z: 0 };
     console.log('[STORM v3] ForceSimulation constructed — repulsion=800, gravity=0.15, boundary=60');
@@ -632,8 +632,8 @@ class ForceSimulation {
   _computeGravity() {
     const g = this.centerGravity;
     for (const n of this.nodes) {
-      // Disconnected nodes get 10x stronger gravity to stay in the cluster
-      const mult = this.connectedNodes.has(n.id) ? 1 : 10;
+      // Disconnected nodes get 3x stronger gravity to stay in the cluster
+      const mult = this.connectedNodes.has(n.id) ? 1 : 3;
       n.fx -= n.x * g * n.mass * mult;
       n.fy -= n.y * g * n.mass * mult;
       n.fz -= n.z * g * n.mass * mult;
