@@ -199,6 +199,8 @@ kbd{display:inline-block;padding:1px 6px;background:rgba(251,248,243,.08);border
   <input type="text" id="search-input" placeholder="Search nodes... (press / to focus)" autocomplete="off">
   <div id="search-results"></div>
 </div>
+<button id="reset-map-btn" onclick="resetToOverview()" style="display:none;position:fixed;top:52px;right:24px;z-index:15;padding:8px 16px;background:rgba(212,148,60,.2);border:1px solid var(--border);color:var(--amber);font-family:'Inter',sans-serif;font-size:.72rem;border-radius:4px;cursor:pointer;letter-spacing:.06em;backdrop-filter:blur(8px);transition:all .25s">&#8592; Back to Overview</button>
+</div>
 
 <div id="controls">
   <div><kbd>Click</kbd> Select node</div>
@@ -390,9 +392,68 @@ const geometries = buildGeometries();
 // ─── Data Store ─────────────────────────────────────────
 let allNodes = [];
 let allEdges = [];
+let overviewNodes = []; // Cache of original overview data
+let overviewEdges = [];
+let isSearchView = false; // True when map shows search results
 const nodeMeshMap = new Map();
 const labelSpriteMap = new Map();
 let showLabels = true;
+
+// ─── Map Lifecycle ──────────────────────────────────────
+function clearMap() {
+  // Remove all node meshes
+  nodeMeshMap.forEach((mesh) => {
+    nodeGroup.remove(mesh);
+    if (mesh.geometry && !mesh.geometry._shared) mesh.geometry.dispose();
+    if (mesh.material) mesh.material.dispose();
+  });
+  nodeMeshMap.clear();
+  // Remove all labels
+  labelSpriteMap.forEach((sprite) => {
+    labelGroup.remove(sprite);
+    if (sprite.material) {
+      if (sprite.material.map) sprite.material.map.dispose();
+      sprite.material.dispose();
+    }
+  });
+  labelSpriteMap.clear();
+  // Remove all edges
+  while (edgeGroup.children.length > 0) {
+    const line = edgeGroup.children[0];
+    edgeGroup.remove(line);
+    if (line.geometry) line.geometry.dispose();
+    if (line.material) line.material.dispose();
+  }
+  // Clear storm state
+  oracleHighlightNodes.clear();
+  stormGlowRings.forEach(ring => scene.remove(ring));
+  stormGlowRings = [];
+  stormSavedScales.clear();
+  selectedNodeId = null;
+  allNodes = [];
+  allEdges = [];
+}
+
+function populateMap(nodes, edges) {
+  allNodes = nodes;
+  allEdges = edges;
+  const visible = allNodes.slice(0, MAX_VISIBLE_NODES);
+  visible.forEach(n => createNodeMesh(n));
+  allEdges.forEach(e => createEdgeLine(e));
+  updateStatusBar();
+}
+
+function resetToOverview() {
+  clearMap();
+  populateMap([...overviewNodes], [...overviewEdges]);
+  isSearchView = false;
+  // Hide reset button
+  const resetBtn = document.getElementById('reset-map-btn');
+  if (resetBtn) resetBtn.style.display = 'none';
+  // Update status
+  const txt = document.getElementById('status-text');
+  txt.textContent = isLiveMode ? 'LIVE' : 'DEMO MODE';
+}
 
 // ─── Node Mesh Creation ─────────────────────────────────
 const edgeGroup = new THREE.Group();
@@ -760,14 +821,11 @@ async function loadData() {
     isLiveMode = false;
   }
 
-  allNodes = data.nodes || [];
-  allEdges = data.edges || [];
+  // Cache overview data for reset
+  overviewNodes = [...(data.nodes || [])];
+  overviewEdges = [...(data.edges || [])];
 
-  const visible = allNodes.slice(0, MAX_VISIBLE_NODES);
-  visible.forEach(n => createNodeMesh(n));
-  allEdges.forEach(e => createEdgeLine(e));
-
-  updateStatusBar();
+  populateMap(data.nodes || [], data.edges || []);
 
   if (QUERY_HIGHLIGHT && HIGHLIGHT_MODE) {
     highlightSearch(QUERY_HIGHLIGHT);
@@ -852,7 +910,6 @@ function unhoverMesh(mesh) {
 
 function selectNode(nodeId) {
   selectedNodeId = nodeId;
-  clearStormEffects();
   oracleHighlightNodes.clear();
   const node = allNodes.find(n => n.id === nodeId);
   if (!node) return;
@@ -861,9 +918,6 @@ function selectNode(nodeId) {
   if (mesh) {
     controls.target.lerp(mesh.position, 0.3);
   }
-
-  // Clear Oracle highlight when user manually selects a node
-  oracleHighlightNodes.clear();
 
   if (!window.neuroluxOracle || !window.neuroluxOracle.panelOpen) {
     showInfoPanel(node);
@@ -987,8 +1041,11 @@ searchInput.addEventListener('input', () => {
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { toggleSearch(false); e.preventDefault(); }
   if (e.key === 'Enter') {
-    const first = searchResults.querySelector('.search-result');
-    if (first) first.click();
+    const q = searchInput.value.trim();
+    if (q.length >= 2) {
+      highlightForOracle(q);
+      toggleSearch(false);
+    }
   }
 });
 
@@ -1635,341 +1692,199 @@ class NeuroluxOracle {
   }
 }
 
-// ─── 3D Graph \u2194 Oracle Highlighting ─────────────────────
+// ─── 3D Graph: Search Replaces Map ──────────────────────
 let oracleHighlightNodes = new Set();
 let oracleHighlightStart = 0;
-const ORACLE_HIGHLIGHT_DURATION = 12; // seconds before fade
-
-// ─── Storm Visual Effect System ─────────────────────────
-// Storm phases: disruption (0-0.6s) → attraction (0.6-1.8s) → crystallize (1.8-3s) → living (3s+)
-const STORM_PHASE_DISRUPTION = 0.6;
-const STORM_PHASE_ATTRACTION = 1.8;
-const STORM_PHASE_CRYSTALLIZE = 3.0;
-let stormGlowRings = [];     // Temporary glow rings around storm nodes
-let stormSavedScales = new Map(); // Original scales per node
+let stormGlowRings = [];
+let stormSavedScales = new Map();
+let searchInProgress = false;
 
 function clearStormEffects() {
-  // Remove glow rings
   stormGlowRings.forEach(ring => scene.remove(ring));
   stormGlowRings = [];
-  // Restore original scales
-  stormSavedScales.forEach((scale, nodeId) => {
-    const mesh = nodeMeshMap.get(nodeId);
-    if (mesh) mesh.scale.setScalar(scale);
-  });
   stormSavedScales.clear();
-  // Remove dynamically spawned storm nodes
-  nodeMeshMap.forEach((mesh, nodeId) => {
-    if (mesh.userData.dynamicStormNode) {
-      nodeGroup.remove(mesh);
-      if (mesh.geometry) mesh.geometry.dispose();
-      if (mesh.material) mesh.material.dispose();
-      nodeMeshMap.delete(nodeId);
-      // Remove label if exists
-      const label = labelSpriteMap.get(nodeId);
-      if (label) { labelGroup.remove(label); labelSpriteMap.delete(nodeId); }
-    }
-  });
-  allNodes = allNodes.filter(n => {
-    const m = nodeMeshMap.get(n.id);
-    return !m || !m.userData.dynamicStormNode;
-  });
-  // Restore all node opacities
-  nodeMeshMap.forEach((mesh) => {
-    if (mesh.material) {
-      mesh.material.opacity = 0.9;
-      mesh.material.emissiveIntensity = 0.35;
-    }
-  });
-  // Restore all edge opacities
-  edgeGroup.children.forEach(line => {
-    if (line.material) {
-      line.material.opacity = 0.15;
-      line.material.color.setHex(0x3d8c8c);
-    }
-  });
+  oracleHighlightNodes.clear();
 }
 
 async function highlightForOracle(query) {
-  if (!query) return;
+  if (!query || searchInProgress) return;
+  searchInProgress = true;
 
-  // Clear previous storm FIRST (removes old dynamic nodes + restores opacities)
-  clearStormEffects();
-  oracleHighlightNodes.clear();
+  const statusText = document.getElementById('status-text');
+  const resetBtn = document.getElementById('reset-map-btn');
+  statusText.textContent = 'Searching...';
 
-  const matchSet = new Set();
-  let apiSearchNodes = []; // Full search results for spawning dynamic nodes
+  try {
+    // 1) Fetch search results from API
+    let searchNodes = [];
+    if (isLiveMode) {
+      try {
+        const resp = await fetch(`${API_BASE}/api/v1/3d-map/search?q=${encodeURIComponent(query)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          searchNodes = data.nodes || [];
+        }
+      } catch (e) {
+        console.warn('[Search] API failed, falling back to local:', e);
+      }
+    }
 
-  // 1) API search
-  if (isLiveMode) {
-    try {
-      const resp = await fetch(`${API_BASE}/api/v1/3d-map/search?q=${encodeURIComponent(query)}`);
-      if (resp.ok) {
-        const data = await resp.json();
-        apiSearchNodes = data.nodes || [];
-        apiSearchNodes.forEach(n => {
-          if (nodeMeshMap.has(n.id)) matchSet.add(n.id);
+    // 2) If API returned nothing, fall back to local search
+    if (searchNodes.length === 0) {
+      const q = query.toLowerCase();
+      const keywords = q.split(/\s+/).filter(w => w.length > 2);
+      const sourceNodes = isSearchView ? allNodes : overviewNodes;
+      const matches = sourceNodes.filter(n => {
+        const hay = ((n.label || '') + ' ' + (n.summary || '') + ' ' + (n.id || '')).toLowerCase();
+        return hay.includes(q) || keywords.some(kw => hay.includes(kw));
+      });
+      if (matches.length > 0) {
+        // Local match: highlight in place without replacing map
+        clearStormEffects();
+        oracleHighlightNodes = new Set(matches.map(m => m.id));
+        oracleHighlightStart = clock.getElapsedTime();
+        nodeMeshMap.forEach((mesh, nodeId) => {
+          if (oracleHighlightNodes.has(nodeId)) {
+            mesh.material.opacity = 1.0;
+            mesh.material.emissiveIntensity = 1.5;
+          } else {
+            mesh.material.opacity = 0.08;
+            mesh.material.emissiveIntensity = 0.05;
+          }
         });
+        statusText.textContent = `${matches.length} local matches for "${query}"`;
+        return;
       }
-    } catch (e) {}
-  }
-
-  // 2) Local label/summary + ID matching to supplement API results
-  const q = query.toLowerCase();
-  const keywords = q.split(/\s+/).filter(w => w.length > 2);
-  allNodes.forEach(n => {
-    const label = (n.label || '').toLowerCase();
-    const summary = (n.summary || '').toLowerCase();
-    const idLower = (n.id || '').toLowerCase();
-    const haystack = label + ' ' + summary + ' ' + idLower;
-    if (haystack.includes(q) || keywords.some(kw => haystack.includes(kw))) {
-      matchSet.add(n.id);
+      statusText.textContent = `No results for "${query}"`;
+      return;
     }
-  });
 
-  // 3) Dynamically spawn search results that aren't on the map yet
-  const offMapNodes = apiSearchNodes.filter(n => !nodeMeshMap.has(n.id));
-  if (offMapNodes.length > 0) {
-    // Find a centroid for positioning — use existing matches or map center
+    // 3) Fetch edges and find bridge nodes that connect results
+    const expandLimit = Math.min(searchNodes.length, 15);
+    const searchNodeIds = new Set(searchNodes.map(n => n.id));
+    const neighborCount = new Map(); // neighborId -> Set of search nodes it connects to
+    const allRawEdges = [];
+
+    statusText.textContent = `Loading ${searchNodes.length} results...`;
+
+    const expandPromises = searchNodes.slice(0, expandLimit).map(async (n) => {
+      try {
+        const resp = await fetch(`${API_BASE}/api/v1/3d-map/expand/${encodeURIComponent(n.id)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          return { nodeId: n.id, edges: data.edges || [], nodes: data.nodes || [] };
+        }
+      } catch (e) {}
+      return { nodeId: n.id, edges: [], nodes: [] };
+    });
+    const expandResults = await Promise.all(expandPromises);
+
+    // Build neighbor connectivity map + collect all expand nodes
+    const expandNodeMap = new Map(); // id -> node data from expand
+    expandResults.forEach(r => {
+      r.nodes.forEach(n => { if (!expandNodeMap.has(n.id)) expandNodeMap.set(n.id, n); });
+      r.edges.forEach(e => {
+        allRawEdges.push(e);
+        // Track which search nodes each neighbor connects to
+        const other = e.source === r.nodeId ? e.target : e.source;
+        if (!searchNodeIds.has(other)) {
+          if (!neighborCount.has(other)) neighborCount.set(other, new Set());
+          neighborCount.get(other).add(r.nodeId);
+        }
+      });
+    });
+
+    // Include bridge nodes that connect 2+ search results
+    const bridgeNodes = [];
+    neighborCount.forEach((connectedSearchNodes, neighborId) => {
+      if (connectedSearchNodes.size >= 2) {
+        const nodeData = expandNodeMap.get(neighborId);
+        if (nodeData && nodeData.x !== undefined) {
+          bridgeNodes.push(nodeData);
+          searchNodeIds.add(neighborId); // Add to ID set for edge filtering
+        }
+      }
+    });
+
+    // Collect edges where both endpoints are in our final node set
+    const allSearchEdges = [];
+    const edgeDedup = new Set();
+    allRawEdges.forEach(e => {
+      if (searchNodeIds.has(e.source) && searchNodeIds.has(e.target)) {
+        const key = e.source < e.target ? `${e.source}->${e.target}` : `${e.target}->${e.source}`;
+        if (!edgeDedup.has(key)) {
+          edgeDedup.add(key);
+          allSearchEdges.push(e);
+        }
+      }
+    });
+
+    const finalNodes = [...searchNodes, ...bridgeNodes];
+    console.log(`[Search] "${query}" → ${searchNodes.length} results + ${bridgeNodes.length} bridges, ${allSearchEdges.length} edges`);
+
+    // 4) Replace the map
+    clearMap();
+    populateMap(finalNodes, allSearchEdges);
+    isSearchView = true;
+
+    oracleHighlightNodes = new Set(searchNodes.map(n => n.id));
+    oracleHighlightStart = clock.getElapsedTime();
+
+    // 5) Show reset button + update status
+    if (resetBtn) resetBtn.style.display = 'block';
+    statusText.textContent = `"${query}" — ${finalNodes.length} nodes, ${allSearchEdges.length} connections`;
+
+    // 6) Camera fly to centroid
     const centroid = new THREE.Vector3();
-    let anchorCount = 0;
-    matchSet.forEach(id => {
-      const m = nodeMeshMap.get(id);
-      if (m) { centroid.add(m.position); anchorCount++; }
-    });
-    if (anchorCount > 0) {
-      centroid.divideScalar(anchorCount);
-    } else {
-      centroid.copy(controls.target);
-    }
-
-    // Spawn up to 25 dynamic nodes in a sphere around the centroid
-    const spawnLimit = Math.min(offMapNodes.length, 25);
-    for (let i = 0; i < spawnLimit; i++) {
-      const n = offMapNodes[i];
-      const phi = Math.acos(1 - 2 * (i + 0.5) / spawnLimit);
-      const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
-      const radius = 20 + Math.random() * 15;
-      const spawnNode = {
-        id: n.id,
-        label: n.label || 'Search Result',
-        type: n.type || 'concept',
-        importance: n.importance || 0.5,
-        x: centroid.x + radius * Math.sin(phi) * Math.cos(theta),
-        y: centroid.y + radius * Math.cos(phi),
-        z: centroid.z + radius * Math.sin(phi) * Math.sin(theta)
-      };
-      createNodeMesh(spawnNode);
-      allNodes.push(spawnNode);
-      matchSet.add(n.id);
-      // Tag as dynamic for cleanup
+    let count = 0;
+    finalNodes.forEach(n => {
       const mesh = nodeMeshMap.get(n.id);
-      if (mesh) mesh.userData.dynamicStormNode = true;
-    }
-  }
-
-  const matchingNodeIds = [...matchSet];
-  if (matchingNodeIds.length === 0) {
-    console.log('[Storm] No matches found for:', query);
-    return;
-  }
-  const spawned = Math.min(offMapNodes.length, 25);
-  console.log(`[Storm] Query "${query}" → ${matchingNodeIds.length} matches (${spawned > 0 ? spawned + ' spawned' : 'all on map'})`);
-
-  // Set highlight state
-  oracleHighlightNodes = new Set(matchingNodeIds);
-  oracleHighlightStart = clock.getElapsedTime();
-
-  // Also find neighbor nodes (connected via edges)
-  const neighborNodes = new Set();
-  allEdges.forEach(e => {
-    if (oracleHighlightNodes.has(e.source)) neighborNodes.add(e.target);
-    if (oracleHighlightNodes.has(e.target)) neighborNodes.add(e.source);
-  });
-
-  // Save original scales for matched nodes
-  matchingNodeIds.forEach(nid => {
-    const mesh = nodeMeshMap.get(nid);
-    if (mesh) stormSavedScales.set(nid, mesh.scale.x);
-  });
-
-  // Phase 1: Disruption — dim everything, flash core
-  nodeMeshMap.forEach((mesh, nodeId) => {
-    if (oracleHighlightNodes.has(nodeId)) {
-      mesh.material.opacity = 1.0;
-      mesh.material.emissiveIntensity = 2.0;
-      mesh.scale.setScalar((stormSavedScales.get(nodeId) || 1) * 1.8);
-    } else if (neighborNodes.has(nodeId)) {
-      mesh.material.opacity = 0.4;
-      mesh.material.emissiveIntensity = 0.3;
-    } else {
-      mesh.material.opacity = 0.06;
-      mesh.material.emissiveIntensity = 0.05;
-    }
-  });
-
-  // Brighten connected edges, dim rest
-  edgeGroup.children.forEach(line => {
-    const eid = line.userData.edgeId || '';
-    const parts = eid.split('->');
-    const bothMatch = oracleHighlightNodes.has(parts[0]) && oracleHighlightNodes.has(parts[1]);
-    const oneMatch = parts.some(p => oracleHighlightNodes.has(p));
-    if (bothMatch) {
-      line.material.opacity = 0.9;
-      line.material.color.setHex(0xd4943c); // Gold
-    } else if (oneMatch) {
-      line.material.opacity = 0.3;
-    } else {
-      line.material.opacity = 0.01;
-    }
-  });
-
-  // Add glow rings around highlighted nodes
-  const ringGeo = new THREE.RingGeometry(3, 4.5, 32);
-  matchingNodeIds.forEach(nid => {
-    const mesh = nodeMeshMap.get(nid);
-    if (!mesh) return;
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x3d8c8c, transparent: true, opacity: 0.6, side: THREE.DoubleSide
+      if (mesh) { centroid.add(mesh.position); count++; }
     });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.position.copy(mesh.position);
-    ring.userData.targetNodeId = nid;
-    scene.add(ring);
-    stormGlowRings.push(ring);
-  });
-
-  // Camera: pull back first, then fly toward centroid
-  const centroid = new THREE.Vector3();
-  let count = 0;
-  matchingNodeIds.forEach(nid => {
-    const mesh = nodeMeshMap.get(nid);
-    if (mesh) { centroid.add(mesh.position); count++; }
-  });
-  if (count > 0) {
-    centroid.divideScalar(count);
-    const startPos = camera.position.clone();
-    const startTarget = controls.target.clone();
-
-    // Pull back briefly, then push to target
-    const pullbackPos = startPos.clone().multiplyScalar(1.15);
-    const targetPos = centroid.clone().add(new THREE.Vector3(35, 20, 45));
-    let progress = 0;
-    const flyCamera = () => {
-      progress += 0.015;
-      if (progress > 1) progress = 1;
-      const ease = progress * progress * (3 - 2 * progress);
-      if (progress < 0.3) {
-        // Phase: pull back
-        const p = progress / 0.3;
-        camera.position.lerpVectors(startPos, pullbackPos, p * p);
-      } else {
-        // Phase: push forward to target
-        const p = (progress - 0.3) / 0.7;
-        const e = p * p * (3 - 2 * p);
-        camera.position.lerpVectors(pullbackPos, targetPos, e);
+    if (count > 0) {
+      centroid.divideScalar(count);
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+      const targetPos = centroid.clone().add(new THREE.Vector3(40, 25, 50));
+      let progress = 0;
+      const flyCamera = () => {
+        progress += 0.02;
+        if (progress > 1) progress = 1;
+        const e = progress * progress * (3 - 2 * progress);
+        camera.position.lerpVectors(startPos, targetPos, e);
         controls.target.lerpVectors(startTarget, centroid, e);
-      }
-      if (progress < 1) requestAnimationFrame(flyCamera);
-    };
-    flyCamera();
+        if (progress < 1) requestAnimationFrame(flyCamera);
+      };
+      flyCamera();
+    }
+
+  } catch (err) {
+    console.error('[Search] Error:', err);
+    statusText.textContent = 'Search failed';
+  } finally {
+    searchInProgress = false;
   }
 }
 
 function updateOracleHighlight(t) {
   if (oracleHighlightNodes.size === 0) return;
-
+  // Subtle persistent glow — gentle pulse, NO fade-out, results stay on map
   const elapsed = t - oracleHighlightStart;
-
-  // Determine storm phase
-  let phase, phaseProgress;
-  if (elapsed < STORM_PHASE_DISRUPTION) {
-    phase = 'disruption';
-    phaseProgress = elapsed / STORM_PHASE_DISRUPTION;
-  } else if (elapsed < STORM_PHASE_ATTRACTION) {
-    phase = 'attraction';
-    phaseProgress = (elapsed - STORM_PHASE_DISRUPTION) / (STORM_PHASE_ATTRACTION - STORM_PHASE_DISRUPTION);
-  } else if (elapsed < STORM_PHASE_CRYSTALLIZE) {
-    phase = 'crystallize';
-    phaseProgress = (elapsed - STORM_PHASE_ATTRACTION) / (STORM_PHASE_CRYSTALLIZE - STORM_PHASE_ATTRACTION);
-  } else {
-    phase = 'living';
-    phaseProgress = Math.min(1, (elapsed - STORM_PHASE_CRYSTALLIZE) / 2);
-  }
-
-  // Storm pulse — varies by phase
-  const pulseSpeed = phase === 'disruption' ? 8 : phase === 'attraction' ? 5 : 3;
-  const pulseRange = phase === 'disruption' ? 0.5 : 0.3;
-  const pulse = (1.0 - pulseRange) + Math.sin(elapsed * pulseSpeed) * pulseRange;
-
-  // Update highlighted nodes
+  const pulse = 0.5 + Math.sin(elapsed * 1.5) * 0.15;
   oracleHighlightNodes.forEach(nodeId => {
     const mesh = nodeMeshMap.get(nodeId);
     if (!mesh || !mesh.material) return;
-    mesh.material.emissiveIntensity = pulse * (phase === 'disruption' ? 2.0 : 1.2);
-
-    // Scale pulse during disruption, settle during crystallize
-    const baseScale = stormSavedScales.get(nodeId) || 1;
-    if (phase === 'disruption') {
-      mesh.scale.setScalar(baseScale * (1.5 + Math.sin(elapsed * 10) * 0.3));
-    } else if (phase === 'attraction') {
-      mesh.scale.setScalar(baseScale * (1.8 - phaseProgress * 0.4));
-    } else if (phase === 'crystallize') {
-      mesh.scale.setScalar(baseScale * (1.4 - phaseProgress * 0.15));
-    } else {
-      mesh.scale.setScalar(baseScale * (1.25 + Math.sin(elapsed * 1.5) * 0.05));
-    }
+    mesh.material.emissiveIntensity = 0.35 + pulse * 0.4;
   });
-
-  // Animate glow rings — rotate, pulse opacity, track node position
+  // Animate glow rings if any
   stormGlowRings.forEach((ring, i) => {
     const nid = ring.userData.targetNodeId;
     const mesh = nodeMeshMap.get(nid);
     if (mesh) ring.position.copy(mesh.position);
-    ring.rotation.x = t * 0.5 + i * 0.3;
-    ring.rotation.y = t * 0.3 + i * 0.7;
-    const ringPulse = 0.3 + Math.sin(elapsed * 4 + i * 1.2) * 0.3;
-    ring.material.opacity = phase === 'living' ? ringPulse * 0.5 : ringPulse;
-    const ringScale = phase === 'crystallize' ? 1.0 + phaseProgress * 0.3 : 1.0 + Math.sin(elapsed * 2) * 0.2;
-    ring.scale.setScalar(ringScale);
+    ring.rotation.x = t * 0.3 + i * 0.5;
+    ring.rotation.y = t * 0.2 + i * 0.8;
+    ring.material.opacity = 0.2 + Math.sin(elapsed * 2 + i) * 0.15;
   });
-
-  // Fade out after duration
-  if (elapsed > ORACLE_HIGHLIGHT_DURATION) {
-    const fadeProgress = Math.min(1, (elapsed - ORACLE_HIGHLIGHT_DURATION) / 3);
-    if (fadeProgress >= 1) {
-      oracleHighlightNodes.clear();
-      clearStormEffects();
-      deselectAll();
-    } else {
-      // Fade glow rings
-      stormGlowRings.forEach(ring => {
-        ring.material.opacity *= (1 - fadeProgress);
-      });
-      // Fade nodes back to normal
-      nodeMeshMap.forEach((mesh, nodeId) => {
-        if (oracleHighlightNodes.has(nodeId)) {
-          const baseScale = stormSavedScales.get(nodeId) || 1;
-          mesh.scale.setScalar(baseScale * (1 + (0.25) * (1 - fadeProgress)));
-          mesh.material.opacity = 1.0 - fadeProgress * 0.1;
-          mesh.material.emissiveIntensity = pulse * (1 - fadeProgress) + 0.35 * fadeProgress;
-        } else {
-          mesh.material.opacity = 0.06 + fadeProgress * 0.84;
-          mesh.material.emissiveIntensity = 0.05 + fadeProgress * 0.3;
-        }
-      });
-      // Fade edges back
-      edgeGroup.children.forEach(line => {
-        const eid = line.userData.edgeId || '';
-        const parts = eid.split('->');
-        const connected = parts.some(p => oracleHighlightNodes.has(p));
-        if (!connected) {
-          line.material.opacity = 0.01 + fadeProgress * 0.14;
-        }
-        line.material.color.setHex(0x3d8c8c); // Reset to teal
-      });
-    }
-  }
 }
 
 // ─── Init ───────────────────────────────────────────────
