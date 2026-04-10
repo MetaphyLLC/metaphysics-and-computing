@@ -59,7 +59,8 @@ async function* createDeepInfraStream(messages, opts = {}) {
       max_tokens: opts.max_tokens || 1024,
       temperature: opts.temperature || 0.7,
       chat_template_kwargs: { enable_thinking: false }
-    })
+    }),
+    signal: AbortSignal.timeout(90_000) // 90s max — Railway proxy cuts at 100s
   });
 
   if (!resp.ok) {
@@ -113,19 +114,28 @@ app.use(express.json({ limit: '16kb' }));
 /**
  * GET /api/health
  * Returns server + dependency health status.
+ * Uses cached UAIMC/CANS health to respond instantly (checked in background).
  */
-app.get('/api/health', async (req, res) => {
-  const [uaimcHealthy, cansAvailable] = await Promise.all([
-    checkUAIMCHealth(),
-    checkCANSHealth()
-  ]);
-  const deepinfraConfigured = Boolean(DEEPINFRA_API_KEY);
+let _cachedUaimcHealth = false;
+let _cachedCansHealth = false;
+let _lastHealthCheck = 0;
 
+async function _refreshUaimcHealth() {
+  const [u, c] = await Promise.allSettled([checkUAIMCHealth(), checkCANSHealth()]);
+  _cachedUaimcHealth = u.status === 'fulfilled' && u.value === true;
+  _cachedCansHealth = c.status === 'fulfilled' && c.value === true;
+  _lastHealthCheck = Date.now();
+}
+// Warm cache on startup, refresh every 20s
+_refreshUaimcHealth();
+setInterval(_refreshUaimcHealth, 20_000);
+
+app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    uaimc: uaimcHealthy,
-    cans: cansAvailable,
-    deepinfra: deepinfraConfigured,
+    uaimc: _cachedUaimcHealth,
+    cans: _cachedCansHealth,
+    deepinfra: Boolean(DEEPINFRA_API_KEY),
     model: LLM_MODEL,
     tts: ttsClient ? TTS_MODEL : 'disabled',
     tts_voice: TTS_VOICE,
@@ -157,6 +167,7 @@ app.post('/api/chat', apiRateLimiter, async (req, res) => {
   res.setHeader('Content-Type', 'application/x-ndjson');
   res.setHeader('Transfer-Encoding', 'chunked');
   res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('X-Accel-Buffering', 'no'); // Prevent Railway/nginx proxy buffering
   res.flushHeaders();
 
   const conversationMessages = [{ role: 'user', content: message }];
@@ -208,7 +219,7 @@ const UAIMC_URL = process.env.UAIMC_URL || 'http://localhost:8765';
 app.get('/api/v1/3d-map/overview', async (req, res) => {
   try {
     const resp = await fetch(`${UAIMC_URL}/api/v1/3d-map/overview`, {
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(10000)
     });
     const data = await resp.json();
     res.json(data);
@@ -223,7 +234,7 @@ app.get('/api/v1/3d-map/search', async (req, res) => {
     const q = req.query.q || '';
     const limit = parseInt(req.query.limit) || 50;
     const resp = await fetch(`${UAIMC_URL}/api/v1/3d-map/search?q=${encodeURIComponent(q)}&limit=${limit}`, {
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(10000)
     });
     const data = await resp.json();
     res.json(data);
@@ -237,7 +248,7 @@ app.get('/api/v1/3d-map/expand/*', async (req, res) => {
   try {
     const nodeId = req.params[0];
     const resp = await fetch(`${UAIMC_URL}/api/v1/3d-map/expand/${encodeURIComponent(nodeId)}`, {
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(10000)
     });
     const data = await resp.json();
     res.json(data);

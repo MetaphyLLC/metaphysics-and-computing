@@ -10,7 +10,7 @@ const UAIMC_URL = process.env.UAIMC_URL || 'http://localhost:8765';
  */
 async function queryUAIMC(query, limit = 5) {
   const url = `${UAIMC_URL}/query?q=${encodeURIComponent(query)}&limit=${limit}`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(3000), keepalive: true });
+  const resp = await fetch(url, { signal: AbortSignal.timeout(8000), keepalive: true });
   if (!resp.ok) throw new Error(`UAIMC query failed: ${resp.status}`);
   return resp.json();
 }
@@ -23,7 +23,7 @@ async function queryUAIMC(query, limit = 5) {
 async function getOracleContext(query) {
   const q = query ? `&q=${encodeURIComponent(query)}` : '';
   const url = `${UAIMC_URL}/context?agent=ORACLE${q}`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(3000), keepalive: true });
+  const resp = await fetch(url, { signal: AbortSignal.timeout(8000), keepalive: true });
   if (!resp.ok) throw new Error(`UAIMC context failed: ${resp.status}`);
   return resp.json();
 }
@@ -68,7 +68,7 @@ async function ingestConversation(messages, sessionId) {
  */
 async function queryCANS(query, limit = 5) {
   const url = `${UAIMC_URL}/api/v1/3d-map/search?q=${encodeURIComponent(query)}&limit=${limit}`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(3000), keepalive: true });
+  const resp = await fetch(url, { signal: AbortSignal.timeout(8000), keepalive: true });
   if (!resp.ok) throw new Error(`CANS query failed: ${resp.status}`);
   return resp.json();
 }
@@ -80,7 +80,7 @@ async function queryCANS(query, limit = 5) {
  */
 async function getCANSContext(query) {
   const url = `${UAIMC_URL}/context?agent=ORACLE&topic=${encodeURIComponent(query)}&mode=cans`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(3000), keepalive: true });
+  const resp = await fetch(url, { signal: AbortSignal.timeout(8000), keepalive: true });
   if (!resp.ok) throw new Error(`CANS context failed: ${resp.status}`);
   return resp.json();
 }

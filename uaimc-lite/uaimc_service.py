@@ -6197,6 +6197,8 @@ _3D_MAP_TYPE_MAPPING = {
 }
 
 # Cluster centers for deterministic layout (spread on sphere, radius ~100)
+# NOTE: Only used as fallback for isolated nodes in search/expand.
+# Overview uses force-directed layout based on actual edge connectivity.
 _3D_MAP_CLUSTER_CENTERS = {
     "episode":     (80, 0, 40),
     "fact":        (-40, 70, 50),
@@ -6211,17 +6213,125 @@ _3D_MAP_CLUSTER_CENTERS = {
 _3D_MAP_MAX_OVERVIEW_NODES = 300
 _3d_map_overview_cache: dict = {"data": None, "time": 0}
 _3D_MAP_OVERVIEW_TTL = 60  # seconds
+# Cache computed positions so search/expand can reuse them
+_3d_map_position_cache: dict[str, tuple[float, float, float]] = {}
 
 
 def _3d_map_position(node_id: str, vis_type: str) -> tuple[float, float, float]:
-    """Deterministic x/y/z position from node ID and visual type."""
-    cx, cy, cz = _3D_MAP_CLUSTER_CENTERS.get(vis_type, (0, 0, 0))
+    """Return cached force-directed position, or deterministic fallback."""
+    if node_id in _3d_map_position_cache:
+        return _3d_map_position_cache[node_id]
+    # Fallback: hash-based position on a sphere (no type clustering)
     h = hash(node_id) & 0xFFFFFFFF
-    # Spread within ±30 of cluster center using hash bits
-    ox = ((h & 0xFFFF) / 0xFFFF - 0.5) * 60
-    oy = (((h >> 8) & 0xFFFF) / 0xFFFF - 0.5) * 60
-    oz = (((h >> 16) & 0xFFFF) / 0xFFFF - 0.5) * 60
-    return (round(cx + ox, 2), round(cy + oy, 2), round(cz + oz, 2))
+    r = 80
+    phi = ((h & 0xFFFF) / 0xFFFF) * math.pi           # 0..pi
+    theta = (((h >> 16) & 0xFFFF) / 0xFFFF) * 2 * math.pi  # 0..2pi
+    x = round(r * math.sin(phi) * math.cos(theta), 2)
+    y = round(r * math.sin(phi) * math.sin(theta), 2)
+    z = round(r * math.cos(phi), 2)
+    return (x, y, z)
+
+
+def _force_directed_layout(
+    node_ids: list[str],
+    edges: list[dict],
+    iterations: int = 60,
+    repulsion: float = 5000.0,
+    attraction: float = 0.005,
+    damping: float = 0.9,
+    max_displacement: float = 8.0,
+) -> dict[str, tuple[float, float, float]]:
+    """Compute 3D positions via spring-embedder. Connected nodes attract,
+    all nodes repel. Returns {node_id: (x, y, z)}.
+    Edge weight scales attraction — higher weight = closer together."""
+    import random as _rng
+    n = len(node_ids)
+    if n == 0:
+        return {}
+
+    idx = {nid: i for i, nid in enumerate(node_ids)}
+    # Deterministic initial positions on a sphere
+    pos = []
+    for nid in node_ids:
+        h = hash(nid) & 0xFFFFFFFF
+        r = 80 + (((h >> 24) & 0xFF) / 255 - 0.5) * 40  # 60..100
+        phi = ((h & 0xFFFF) / 0xFFFF) * math.pi
+        theta = (((h >> 16) & 0xFFFF) / 0xFFFF) * 2 * math.pi
+        pos.append([
+            r * math.sin(phi) * math.cos(theta),
+            r * math.sin(phi) * math.sin(theta),
+            r * math.cos(phi),
+        ])
+
+    # Build adjacency: list of (i, j, weight)
+    adj = []
+    for e in edges:
+        si = idx.get(e.get("source") or e.get("source_id"))
+        ti = idx.get(e.get("target") or e.get("target_id"))
+        if si is not None and ti is not None and si != ti:
+            w = float(e.get("weight", 1.0))
+            adj.append((si, ti, w))
+
+    for _it in range(iterations):
+        # Initialize displacement
+        disp = [[0.0, 0.0, 0.0] for _ in range(n)]
+
+        # Repulsion: all pairs (O(n^2) — fine for ≤300 nodes)
+        for i in range(n):
+            for j in range(i + 1, n):
+                dx = pos[i][0] - pos[j][0]
+                dy = pos[i][1] - pos[j][1]
+                dz = pos[i][2] - pos[j][2]
+                dist_sq = dx * dx + dy * dy + dz * dz
+                if dist_sq < 0.01:
+                    dist_sq = 0.01
+                force = repulsion / dist_sq
+                dist = math.sqrt(dist_sq)
+                fx = (dx / dist) * force
+                fy = (dy / dist) * force
+                fz = (dz / dist) * force
+                disp[i][0] += fx; disp[i][1] += fy; disp[i][2] += fz
+                disp[j][0] -= fx; disp[j][1] -= fy; disp[j][2] -= fz
+
+        # Attraction along edges (scaled by weight)
+        for si, ti, w in adj:
+            dx = pos[si][0] - pos[ti][0]
+            dy = pos[si][1] - pos[ti][1]
+            dz = pos[si][2] - pos[ti][2]
+            dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if dist < 0.01:
+                continue
+            force = attraction * dist * (0.5 + w * 0.5)  # weight boosts pull
+            fx = (dx / dist) * force
+            fy = (dy / dist) * force
+            fz = (dz / dist) * force
+            disp[si][0] -= fx; disp[si][1] -= fy; disp[si][2] -= fz
+            disp[ti][0] += fx; disp[ti][1] += fy; disp[ti][2] += fz
+
+        # Centering force: gently pull toward origin
+        for i in range(n):
+            disp[i][0] -= pos[i][0] * 0.001
+            disp[i][1] -= pos[i][1] * 0.001
+            disp[i][2] -= pos[i][2] * 0.001
+
+        # Apply displacement with damping and max cap
+        for i in range(n):
+            dx, dy, dz = disp[i]
+            mag = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if mag > max_displacement:
+                scale = max_displacement / mag
+                dx *= scale; dy *= scale; dz *= scale
+            pos[i][0] += dx * damping
+            pos[i][1] += dy * damping
+            pos[i][2] += dz * damping
+
+        # Decay forces over time for convergence
+        damping *= 0.98
+
+    return {
+        node_ids[i]: (round(pos[i][0], 2), round(pos[i][1], 2), round(pos[i][2], 2))
+        for i in range(n)
+    }
 
 
 def _kg_node_to_3d(row: sqlite3.Row) -> dict:
@@ -6282,7 +6392,7 @@ async def threed_map_overview():
                         node_rows.append(r)
                         seen_ids.add(r["id"])
 
-            # Build 3D nodes
+            # Build 3D nodes (initial positions — will be overridden by force layout)
             nodes_3d = [_kg_node_to_3d(r) for r in node_rows]
 
             # Fetch edges between visible nodes only
@@ -6311,6 +6421,17 @@ async def threed_map_overview():
                         break
             else:
                 edges_3d = []
+
+            # ── Force-directed layout: interwoven web, not type islands ──
+            node_id_list = [n["id"] for n in nodes_3d]
+            positions = _force_directed_layout(node_id_list, edges_3d)
+            # Apply computed positions to nodes and update global cache
+            _3d_map_position_cache.clear()
+            for n in nodes_3d:
+                if n["id"] in positions:
+                    x, y, z = positions[n["id"]]
+                    n["x"], n["y"], n["z"] = x, y, z
+                    _3d_map_position_cache[n["id"]] = (x, y, z)
 
             # Stats from cache or quick count
             total_nodes = conn.execute("SELECT COUNT(*) c FROM kg_nodes").fetchone()["c"]
