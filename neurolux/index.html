@@ -402,7 +402,7 @@ class ForceSimulation {
     this.edges = [];       // [{source, target, restLength, springK}]
     this.nodeMap = new Map();
     this.connectedNodes = new Set(); // nodes with at least one edge
-    this.repulsion = 500;
+    this.repulsion = 800;
     this.damping = 0.88;
     this.centerGravity = 0.15;
     this.theta = 0.7;      // Barnes-Hut approximation ratio
@@ -411,14 +411,20 @@ class ForceSimulation {
     this.boundaryRadius = 60; // soft boundary sphere
     this._age = 0;         // simulation age in seconds (for cooling)
     this._tmpVec = { x: 0, y: 0, z: 0 };
-    console.log('[STORM v3] ForceSimulation constructed — repulsion=500, gravity=0.15, boundary=60');
+    console.log('[STORM v3] ForceSimulation constructed — repulsion=800, gravity=0.15, boundary=60');
   }
 
   init(nodes, edges) {
+    // Initialize ALL nodes at center with small random jitter
+    // Let the sim organically build the layout via repulsion + springs + gravity
     this.nodes = nodes.map(n => {
       const mass = this._parseImportance(n.importance);
+      const jitter = 3;
       return {
-        id: n.id, x: n.x || 0, y: n.y || 0, z: n.z || 0,
+        id: n.id,
+        x: (Math.random() - 0.5) * jitter,
+        y: (Math.random() - 0.5) * jitter,
+        z: (Math.random() - 0.5) * jitter,
         vx: 0, vy: 0, vz: 0, fx: 0, fy: 0, fz: 0,
         mass, origX: n.x || 0, origY: n.y || 0, origZ: n.z || 0
       };
