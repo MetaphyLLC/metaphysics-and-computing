@@ -184,7 +184,7 @@ kbd{display:inline-block;padding:1px 6px;background:rgba(251,248,243,.08);border
   <span><span class="status-dot demo" id="status-dot"></span><span id="status-text">DEMO MODE</span></span>
   <span id="node-count">Nodes: 0</span>
   <span id="edge-count">Edges: 0</span>
-  <span style="color:#d4943c;font-weight:bold">v3-storm</span>
+  <span style="color:#d4943c;font-weight:bold">v4-storm</span>
 </div>
 
 <div id="info-panel">
@@ -402,29 +402,36 @@ class ForceSimulation {
     this.edges = [];       // [{source, target, restLength, springK}]
     this.nodeMap = new Map();
     this.connectedNodes = new Set(); // nodes with at least one edge
-    this.repulsion = 2500;
-    this.damping = 0.88;
-    this.centerGravity = 0.025;
+    this.repulsion = 1200;
+    this.damping = 0.90;
+    this.centerGravity = 0.03;
     this.theta = 0.7;      // Barnes-Hut approximation ratio
     this.active = true;
-    this.maxVelocity = 20;  // velocity cap per axis
-    this.boundaryRadius = 200; // soft boundary sphere
+    this.maxVelocity = 15;  // velocity cap per axis
+    this.boundaryRadius = 150; // soft boundary sphere
     this._age = 0;         // simulation age in seconds (for cooling)
     this._tmpVec = { x: 0, y: 0, z: 0 };
     console.log('[STORM v3] ForceSimulation constructed — repulsion=800, gravity=0.15, boundary=60');
   }
 
   init(nodes, edges) {
-    // Initialize ALL nodes at center with small random jitter
-    // Let the sim organically build the layout via repulsion + springs + gravity
+    // Scale API positions to fit within boundary radius
+    // Find max extent, then normalize all positions to ~70% of boundary
+    let maxExtent = 1;
+    nodes.forEach(n => {
+      const ext = Math.max(Math.abs(n.x||0), Math.abs(n.y||0), Math.abs(n.z||0));
+      if (ext > maxExtent) maxExtent = ext;
+    });
+    const targetRadius = this.boundaryRadius * 0.6;
+    const scale = targetRadius / maxExtent;
+
     this.nodes = nodes.map(n => {
       const mass = this._parseImportance(n.importance);
-      const jitter = 3;
       return {
         id: n.id,
-        x: (Math.random() - 0.5) * jitter,
-        y: (Math.random() - 0.5) * jitter,
-        z: (Math.random() - 0.5) * jitter,
+        x: (n.x || 0) * scale,
+        y: (n.y || 0) * scale,
+        z: (n.z || 0) * scale,
         vx: 0, vy: 0, vz: 0, fx: 0, fy: 0, fz: 0,
         mass, origX: n.x || 0, origY: n.y || 0, origZ: n.z || 0
       };
