@@ -324,7 +324,8 @@
                 fullText += data.content + ' ';
                 unspokenText += data.content + ' ';
                 this._streamText(msgEl, data.content + ' ');
-                this.setState('speaking');
+                // Don't setState('speaking') here — let audio playback
+                // drive the orb pulse so visuals sync with actual voice
               }
 
               if (data.type === 'audio' && data.data) {
