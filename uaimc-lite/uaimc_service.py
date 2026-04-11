@@ -6462,10 +6462,12 @@ async def threed_map_search(
     limit: int = Query(30, ge=1, le=100, description="Max results"),
     type: str = Query("", description="Optional node type filter"),
 ):
-    """Search kg_nodes and return results in 3D-map compatible shape.
+    """Search kg_nodes and return a type-diverse result set for 3D visualization.
 
-    Uses FTS5 for text matching, maps node types to neurolux visual types,
-    computes deterministic x/y/z positions.
+    Uses FTS5 for text matching, then applies type-diversity sampling so results
+    "tell the story" of the query rather than being dominated by header nodes.
+    Content-rich types (file, function, class, agent_reference, reference) are
+    prioritized; structural types (header, config_key, import) fill remaining slots.
     Bible: Sprint 1, Step 1.2
     """
     mem = get_memory()
@@ -6488,17 +6490,75 @@ async def threed_map_search(
                 rows = conn.execute(
                     "SELECT * FROM kg_nodes WHERE rowid IN "
                     "(SELECT rowid FROM kg_nodes_fts WHERE kg_nodes_fts MATCH ?) "
-                    "AND type = ? LIMIT ?",
+                    "AND type = ? ORDER BY complexity DESC LIMIT ?",
                     (fts_query, type, limit),
                 ).fetchall()
-            else:
-                rows = conn.execute(
-                    "SELECT * FROM kg_nodes WHERE rowid IN "
-                    "(SELECT rowid FROM kg_nodes_fts WHERE kg_nodes_fts MATCH ?) "
-                    "LIMIT ?",
-                    (fts_query, limit),
-                ).fetchall()
-            return [_kg_node_to_3d(r) for r in rows]
+                return [_kg_node_to_3d(r) for r in rows]
+
+            # Fetch a wider pool (5x limit) so we have diversity to sample from
+            pool_size = min(limit * 5, 500)
+            rows = conn.execute(
+                "SELECT * FROM kg_nodes WHERE rowid IN "
+                "(SELECT rowid FROM kg_nodes_fts WHERE kg_nodes_fts MATCH ?) "
+                "ORDER BY complexity DESC LIMIT ?",
+                (fts_query, pool_size),
+            ).fetchall()
+
+            # Group by raw KG type, sorted by complexity within each group
+            by_type: dict[str, list] = {}
+            for r in rows:
+                by_type.setdefault(r["type"], []).append(r)
+
+            # Content-rich types get priority slots; structural types fill remainder
+            priority_types = ["file", "function", "class", "agent_reference", "reference"]
+            filler_types = ["header", "config_key", "import"]
+
+            result = []
+            seen = set()
+
+            # Round-robin priority types first (up to 80% of limit)
+            priority_budget = int(limit * 0.8)
+            round_idx = 0
+            while len(result) < priority_budget:
+                added_any = False
+                for kt in priority_types:
+                    group = by_type.get(kt, [])
+                    if round_idx < len(group):
+                        r = group[round_idx]
+                        if r["id"] not in seen:
+                            result.append(r)
+                            seen.add(r["id"])
+                            added_any = True
+                    if len(result) >= priority_budget:
+                        break
+                round_idx += 1
+                if not added_any:
+                    break
+
+            # Fill remaining slots with filler types (headers etc.)
+            remaining = limit - len(result)
+            if remaining > 0:
+                for kt in filler_types:
+                    for r in by_type.get(kt, []):
+                        if r["id"] not in seen:
+                            result.append(r)
+                            seen.add(r["id"])
+                            remaining -= 1
+                            if remaining <= 0:
+                                break
+                    if remaining <= 0:
+                        break
+
+            # If still under limit, pull from any remaining types
+            if len(result) < limit:
+                for r in rows:
+                    if r["id"] not in seen:
+                        result.append(r)
+                        seen.add(r["id"])
+                        if len(result) >= limit:
+                            break
+
+            return [_kg_node_to_3d(r) for r in result]
 
         nodes = await asyncio.to_thread(_search)
         return {"query": q, "nodes": nodes, "count": len(nodes)}
