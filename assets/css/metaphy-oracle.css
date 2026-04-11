@@ -1,0 +1,554 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   METAPHY-ORACLE.CSS  —  Oracle Voice AI styles ONLY
+   Sprint 3 extraction: contains just the Oracle panel, orb, animations,
+   and responsive rules. Does NOT include global typography, nav, footer,
+   or layout styles (those stay in metaphy-core.css for future sprints).
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Oracle CSS variables ── */
+:root {
+  --oracle-teal:      #3D8C8C;
+  --oracle-teal-dark: #2A6363;
+  --oracle-teal-glow: rgba(61, 140, 140, 0.35);
+  --oracle-gold:      #C9A84C;
+  --oracle-dark:      #0A0E17;
+
+  /* Shared tokens used by Oracle components */
+  --sans:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --serif:  'Cormorant Garamond', 'Garamond', 'Times New Roman', serif;
+  --mono:   'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --text:         #E2E8F0;
+  --text-muted:   #64748B;
+  --text-dim:     #94A3B8;
+  --surface-hover: rgba(255, 255, 255, 0.06);
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   ORACLE PANEL  —  Always teal/gold (theme-independent)
+   ────────────────────────────────────────────────────────────────────────────── */
+
+/* --- Orb --- */
+.oracle-orb {
+  position: fixed;
+  bottom: 2rem; right: 2rem;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--oracle-teal), var(--oracle-dark));
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(61, 140, 140, 0.4), 0 0 60px rgba(61, 140, 140, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: orbFloat 6s ease-in-out infinite, orbPulse 3s ease-in-out infinite;
+  z-index: 9999;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.oracle-orb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 30px rgba(61, 140, 140, 0.6),
+              0 0 80px rgba(201, 168, 76, 0.2);
+}
+
+.oracle-orb.panel-open {
+  animation: none;
+  transform: scale(0.9);
+  opacity: 0.6;
+}
+
+.oracle-orb.listening {
+  width: 80px; height: 80px;
+  box-shadow: 0 0 40px rgba(61, 140, 140, 0.8),
+              0 0 100px rgba(61, 140, 140, 0.3);
+  animation: orbListening 0.6s ease-in-out infinite;
+}
+
+.oracle-orb.thinking {
+  background: radial-gradient(circle at 30% 30%, var(--oracle-gold), var(--oracle-teal), var(--oracle-dark));
+  animation: orbFloat 3s ease-in-out infinite, orbPulse 1.5s ease-in-out infinite;
+}
+
+.oracle-orb.speaking {
+  background: radial-gradient(circle at 30% 30%, var(--oracle-gold), var(--oracle-teal), var(--oracle-dark));
+  animation: orbSpeaking 0.4s ease-in-out infinite;
+}
+
+.oracle-orb.offline {
+  opacity: 0.4;
+  filter: grayscale(0.5);
+  animation: orbFloat 10s ease-in-out infinite;
+}
+
+.oracle-orb-svg {
+  width: 40px; height: 40px;
+  animation: orbRotate 60s linear infinite;
+  pointer-events: none;
+}
+
+.oracle-orb.listening .oracle-orb-svg { animation: orbRotate 10s linear infinite; }
+.oracle-orb.thinking .oracle-orb-svg  { animation: orbRotate 6s linear infinite; }
+
+/* --- Tooltip --- */
+.oracle-tooltip {
+  position: fixed;
+  bottom: 6.5rem; right: 2rem;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  background: rgba(10, 14, 23, 0.9);
+  border: 1px solid rgba(61, 140, 140, 0.3);
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  z-index: 9999;
+}
+
+.oracle-orb:hover + .oracle-tooltip { opacity: 1; }
+
+/* --- First Visit Bubble --- */
+.oracle-bubble {
+  position: fixed;
+  bottom: 7rem; right: 2rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: #E2E8F0;
+  background: rgba(10, 14, 23, 0.95);
+  border: 1px solid rgba(61, 140, 140, 0.4);
+  border-radius: 8px;
+  padding: 1rem;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s;
+  max-width: 220px;
+  line-height: 1.5;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 9998;
+}
+
+.oracle-bubble.visible { opacity: 1; transform: translateY(0); }
+
+.oracle-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px; right: 24px;
+  width: 12px; height: 12px;
+  background: rgba(10, 14, 23, 0.95);
+  border-right: 1px solid rgba(61, 140, 140, 0.4);
+  border-bottom: 1px solid rgba(61, 140, 140, 0.4);
+  transform: rotate(45deg);
+}
+
+/* --- Chat Panel --- */
+.oracle-panel {
+  position: fixed;
+  bottom: 7rem; right: 2rem;
+  width: 380px; height: 520px;
+  background: rgba(10, 14, 23, 0.95);
+  border: 1px solid rgba(61, 140, 140, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(24px) scale(0.8);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1001;
+}
+
+.oracle-panel.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* --- Panel Header --- */
+.oracle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  background: rgba(10, 14, 23, 0.98);
+  border-bottom: 1px solid rgba(61, 140, 140, 0.2);
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
+}
+
+.oracle-title {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--oracle-gold);
+  letter-spacing: 0.03em;
+}
+
+.oracle-header-controls { display: flex; gap: 0.5rem; }
+
+.oracle-header-controls button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+  font-family: var(--sans);
+  line-height: 1;
+}
+
+.oracle-header-controls button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.oracle-visualize { font-size: 1.1rem !important; }
+.oracle-visualize:hover { color: var(--oracle-gold) !important; }
+
+/* --- Messages --- */
+.oracle-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(61, 140, 140, 0.3) transparent;
+}
+
+.oracle-messages::-webkit-scrollbar { width: 4px; }
+.oracle-messages::-webkit-scrollbar-thumb { background: rgba(61, 140, 140, 0.3); border-radius: 2px; }
+
+.oracle-msg {
+  display: flex;
+  gap: 0;
+  max-width: 90%;
+  animation: msgFade 0.3s ease;
+}
+
+.oracle-msg-ai   { align-self: flex-start; }
+.oracle-msg-user { align-self: flex-end; flex-direction: row-reverse; }
+
+.oracle-msg-indicator {
+  width: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  min-height: 100%;
+}
+
+.oracle-msg-ai .oracle-msg-indicator   { background: var(--oracle-teal); margin-right: 0.6rem; }
+.oracle-msg-user .oracle-msg-indicator { background: var(--oracle-gold); margin-left: 0.6rem; }
+
+.oracle-msg-content {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #E2E8F0;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.oracle-msg-user .oracle-msg-content {
+  background: rgba(201, 168, 76, 0.06);
+}
+
+.oracle-cursor {
+  display: inline-block;
+  width: 2px; height: 1em;
+  background: var(--oracle-teal);
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  animation: cursorBlink 0.8s step-end infinite;
+}
+
+/* --- Thinking Dots --- */
+.oracle-thinking {
+  display: flex;
+  gap: 4px;
+  padding: 0.6rem 0.8rem;
+}
+
+.oracle-thinking span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--oracle-teal);
+  animation: thinkBounce 1.2s ease-in-out infinite;
+}
+
+.oracle-thinking span:nth-child(2) { animation-delay: 0.15s; }
+.oracle-thinking span:nth-child(3) { animation-delay: 0.3s; }
+
+/* --- Input Area --- */
+.oracle-input-area {
+  padding: 0.6rem 1rem 0.8rem;
+  border-top: 1px solid rgba(61, 140, 140, 0.15);
+  flex-shrink: 0;
+  background: rgba(10, 14, 23, 0.5);
+  border-radius: 0 0 12px 12px;
+}
+
+.oracle-waveform {
+  height: 0;
+  overflow: hidden;
+  transition: height 0.2s;
+  margin-bottom: 0;
+}
+
+.oracle-waveform.active { height: 32px; margin-bottom: 0.4rem; }
+.oracle-waveform canvas { width: 100%; height: 32px; display: block; }
+
+.oracle-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.oracle-mic-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: transparent;
+  border: 2px solid rgba(61, 140, 140, 0.5);
+  color: var(--oracle-teal);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.oracle-mic-btn:hover {
+  border-color: var(--oracle-teal);
+  background: rgba(61, 140, 140, 0.1);
+}
+
+.oracle-mic-btn.recording {
+  background: var(--oracle-teal);
+  border-color: var(--oracle-teal);
+  color: var(--oracle-dark);
+  animation: micPulse 1s ease-in-out infinite;
+}
+
+.oracle-mic-btn.unsupported { opacity: 0.3; cursor: not-allowed; }
+.oracle-mic-btn svg { width: 18px; height: 18px; pointer-events: none; }
+
+.oracle-text-input {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: #E2E8F0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(61, 140, 140, 0.2);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.oracle-text-input:focus {
+  border-color: var(--oracle-teal);
+  box-shadow: 0 0 0 2px rgba(61, 140, 140, 0.15);
+}
+
+.oracle-text-input::placeholder { color: var(--text-muted); }
+
+.oracle-send-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--oracle-teal), var(--oracle-teal-dark));
+  border: none;
+  color: #E2E8F0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  opacity: 0.5;
+}
+
+.oracle-send-btn.active { opacity: 1; }
+
+.oracle-send-btn.active:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(61, 140, 140, 0.3);
+}
+
+.oracle-send-btn svg { width: 16px; height: 16px; pointer-events: none; }
+
+.oracle-status {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 0.4rem;
+  letter-spacing: 0.04em;
+}
+
+.oracle-status.connected { color: var(--oracle-teal); }
+.oracle-status.error     { color: #ef4444; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   KEYFRAME ANIMATIONS  —  Oracle-specific
+   ────────────────────────────────────────────────────────────────────────────── */
+
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+@keyframes orbPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(61, 140, 140, 0.4), 0 0 60px rgba(61, 140, 140, 0.1); }
+  50%      { box-shadow: 0 0 35px rgba(61, 140, 140, 0.6), 0 0 80px rgba(61, 140, 140, 0.15); }
+}
+
+@keyframes orbListening {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+@keyframes orbSpeaking {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+@keyframes orbRotate {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
+@keyframes msgFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   SHARED ACCESSIBILITY  —  Used by all pages loading this stylesheet
+   ────────────────────────────────────────────────────────────────────────────── */
+
+/* Focus-visible — keyboard navigation accessibility */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--oracle-teal);
+  outline-offset: 2px;
+}
+
+/* Skip-to-content — screen reader / keyboard standard */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.6rem 1.2rem;
+  background: var(--oracle-teal);
+  color: var(--oracle-dark);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 0 0 6px 6px;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+@keyframes thinkBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%           { transform: translateY(-6px); opacity: 1; }
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(61, 140, 140, 0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(61, 140, 140, 0); }
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE  —  Oracle mobile layout
+   ────────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .oracle-orb {
+    bottom: 1.2rem;
+    right: 50%;
+    margin-right: -32px;
+  }
+
+  .oracle-orb.panel-open { bottom: 1.2rem; }
+
+  .oracle-tooltip { display: none; }
+
+  .oracle-bubble {
+    bottom: 5.5rem;
+    right: 50%;
+    transform: translateX(50%) translateY(8px);
+  }
+
+  .oracle-bubble.visible {
+    transform: translateX(50%) translateY(0);
+  }
+
+  .oracle-bubble::after { right: calc(50% - 6px); }
+
+  .oracle-panel {
+    bottom: 0; right: 0; left: 0;
+    width: 100vw;
+    height: 70vh;
+    border-radius: 16px 16px 0 0;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   ACCESSIBILITY  —  Reduced Motion (Oracle)
+   ────────────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .oracle-orb,
+  .oracle-orb-svg,
+  .oracle-orb.listening,
+  .oracle-orb.thinking,
+  .oracle-orb.speaking,
+  .oracle-mic-btn.recording,
+  .oracle-cursor,
+  .oracle-msg,
+  .oracle-thinking span {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   PRINT  —  Hide Oracle
+   ────────────────────────────────────────────────────────────────────────────── */
+
+@media print {
+  .oracle-orb,
+  .oracle-tooltip,
+  .oracle-bubble,
+  .oracle-panel {
+    display: none !important;
+  }
+}
