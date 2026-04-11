@@ -27,7 +27,7 @@
 
       this.state = 'idle';
       this.panelOpen = false;
-      this.sessionId = this._generateSessionId();
+      this.sessionId = this._getOrCreateSessionId();
       this.messages = [];
       this.audioContext = null;
       this.audioQueue = [];
@@ -43,8 +43,14 @@
     }
 
     /* ─── SESSION ─── */
-    _generateSessionId() {
-      return 'oracle_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    _getOrCreateSessionId() {
+      try {
+        const stored = localStorage.getItem('oracle_session_id');
+        if (stored) return stored;
+      } catch (e) { /* localStorage unavailable (incognito/disabled) */ }
+      const id = 'oracle_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      try { localStorage.setItem('oracle_session_id', id); } catch (e) {}
+      return id;
     }
 
     /* ─── STATE ─── */
