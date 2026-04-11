@@ -44,8 +44,9 @@ COPY config.railway.json config/config.json
 RUN mkdir -p /app/logs
 
 # ── Volume mount point for the 4GB SQLite ──────────────────────────────────
-# Railway persistent volume mounts here. The DB file goes at /data/uaimc.db
-VOLUME /data
+# Railway manages the persistent volume via its dashboard/API (mounted at /data).
+# Do NOT use VOLUME directive — Railway bans it; use Railway volumes instead.
+RUN mkdir -p /data
 
 # ── Entrypoint script (downloads DB on first boot) ─────────────────────────
 COPY start.railway.sh .
