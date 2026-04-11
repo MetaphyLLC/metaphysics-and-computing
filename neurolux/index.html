@@ -557,7 +557,8 @@ function createNodeMesh(node) {
   const mesh = new THREE.Mesh(geo, mat);
   const s = meta.size || 1.0;
   mesh.scale.setScalar(s);
-  mesh.position.set(node.x, node.y, node.z);
+  const px = Number(node.x) || 0, py = Number(node.y) || 0, pz = Number(node.z) || 0;
+  mesh.position.set(px, py, pz);
   mesh.userData = { nodeId: node.id, nodeType: node.type, baseScale: s };
 
   const haloRadius = node.type === 'birth_event' ? 8 : 5;
@@ -1347,7 +1348,8 @@ async function highlightForOracle(query) {
     });
     if (count > 0) {
       centroid.divideScalar(count);
-      flyToTarget(centroid, centroid.clone().add(new THREE.Vector3(15, 10, 80)));
+      const camPos = new THREE.Vector3(0, 40, SHELL_RADIUS * 2.2);
+      flyToTarget(centroid, camPos);
     }
 
   } catch (err) {
@@ -1366,6 +1368,22 @@ function loadOracleNodes(nodes, query) {
   const statusText = document.getElementById('status-text');
   const resetBtn = document.getElementById('reset-map-btn');
   statusText.textContent = `Loading Oracle results...`;
+
+  // Ensure every node has valid 3D positions — if API didn't provide them
+  // or they're all at origin, spread them in a fibonacci sphere layout.
+  const needsLayout = nodes.every(n => (!n.x && !n.y && !n.z) || (n.x === 0 && n.y === 0 && n.z === 0));
+  if (needsLayout) {
+    const r = SHELL_RADIUS * 0.75;
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    nodes.forEach((n, i) => {
+      const y = 1 - (i / Math.max(nodes.length - 1, 1)) * 2;
+      const radiusAtY = Math.sqrt(1 - y * y);
+      const theta = goldenAngle * i;
+      n.x = Math.round(r * radiusAtY * Math.cos(theta) * 100) / 100;
+      n.y = Math.round(r * y * 100) / 100;
+      n.z = Math.round(r * radiusAtY * Math.sin(theta) * 100) / 100;
+    });
+  }
 
   clearMap();
   populateMap(nodes, []);
@@ -1386,16 +1404,10 @@ function loadOracleNodes(nodes, query) {
     ? `"${query}" \u2014 ${nodes.length} nodes (Oracle)`
     : `${nodes.length} nodes (Oracle)`;
 
-  const centroid = new THREE.Vector3();
-  let count = 0;
-  nodes.forEach(n => {
-    const mesh = nodeMeshMap.get(n.id);
-    if (mesh) { centroid.add(mesh.position); count++; }
-  });
-  if (count > 0) {
-    centroid.divideScalar(count);
-    flyToTarget(centroid, centroid.clone().add(new THREE.Vector3(15, 10, 80)));
-  }
+  // Camera: fly to a position that can see the full sphere of results
+  const camTarget = new THREE.Vector3(0, 0, 0);
+  const camPos = new THREE.Vector3(0, 40, SHELL_RADIUS * 2.2);
+  flyToTarget(camTarget, camPos);
 }
 window.loadOracleNodes = loadOracleNodes;
 
