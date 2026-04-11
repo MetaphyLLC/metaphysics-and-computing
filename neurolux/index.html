@@ -1569,16 +1569,21 @@ init();
             window.loadOracleNodes(data.nodes, data.query || lastUserQuery);
           }
         }
-        if (data.type === 'done' && !mapNodesReceived && lastUserQuery) {
-          if (window.highlightForOracle) window.highlightForOracle(lastUserQuery);
-        }
       };
 
       var origSend = window.oracle.sendMessage.bind(window.oracle);
       window.oracle.sendMessage = function (text) {
         mapNodesReceived = false;
         lastUserQuery = text;
-        return origSend(text);
+        var result = origSend(text);
+        if (result && result.then) {
+          result.then(function () {
+            if (!mapNodesReceived && window.highlightForOracle) {
+              window.highlightForOracle(text);
+            }
+          });
+        }
+        return result;
       };
     }, 500);
   });
