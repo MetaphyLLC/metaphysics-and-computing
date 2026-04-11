@@ -323,6 +323,10 @@
             try {
               const data = JSON.parse(line);
 
+              if (typeof this.onNdjsonEvent === 'function') {
+                this.onNdjsonEvent(data);
+              }
+
               if (data.type === 'text') {
                 if (!msgEl) {
                   msgEl = this._appendMessage('ai', '', true);

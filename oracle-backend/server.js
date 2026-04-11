@@ -9,7 +9,7 @@ const { WebSocketServer } = require('ws');
 const OpenAI = require('openai');
 
 const { buildSystemPrompt } = require('./oracle-prompt');
-const { buildRagContext, ingestConversation, checkUAIMCHealth, checkCANSHealth } = require('./uaimc-client');
+const { buildRagContext, ingestConversation, checkUAIMCHealth, checkCANSHealth, queryOracleSearch } = require('./uaimc-client');
 const { sentenceBufferedStream, writeNdjsonEvent } = require('./streaming');
 const { applySecurityMiddleware, apiRateLimiter, validateChatInput } = require('./security');
 
@@ -216,22 +216,49 @@ app.post('/api/chat', apiRateLimiter, async (req, res) => {
     // 2. Build system prompt with injected context
     const systemPrompt = buildSystemPrompt(ragContext);
 
-    // 3. Start streaming LLM response from DeepInfra (thinking suppressed via raw fetch)
+    // 3. Fire oracle-search for 3D map nodes in parallel (non-blocking)
+    const mapNodesPromise = queryOracleSearch(message, 30).catch(err => {
+      console.warn('Oracle map search failed:', err.message);
+      return null;
+    });
+
+    // 4. Start streaming LLM response from DeepInfra (thinking suppressed via raw fetch)
     const llmStream = createDeepInfraStream([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: message }
     ]);
 
-    // 4. Sentence-buffered streaming: LLM → sentence detection → TTS → NDJSON
+    // 5. Inject map_nodes as soon as they arrive (before or during LLM stream)
+    let mapNodesSent = false;
+    const sendMapNodes = async () => {
+      const mapResult = await mapNodesPromise;
+      if (mapResult?.nodes?.length && !mapNodesSent) {
+        mapNodesSent = true;
+        writeNdjsonEvent(res, { type: 'map_nodes', nodes: mapResult.nodes, query: message });
+      }
+    };
+
+    // 6. Sentence-buffered streaming: LLM → sentence detection → TTS → NDJSON
     let fullResponse = '';
+    let firstChunk = true;
     for await (const event of sentenceBufferedStream(llmStream, ttsClient, TTS_VOICE, TTS_MODEL)) {
+      // Send map nodes before the first text chunk if ready
+      if (firstChunk && event.type === 'text') {
+        firstChunk = false;
+        await sendMapNodes();
+      }
       if (event.type === 'text') {
         fullResponse += event.content + ' ';
       }
       writeNdjsonEvent(res, event);
     }
 
-    // 5. Ingest the full conversation into UAIMC asynchronously (non-blocking)
+    // Send map nodes after stream if they weren't sent yet
+    if (!mapNodesSent) {
+      await sendMapNodes();
+    }
+
+    // 7. Ingest the full conversation into UAIMC asynchronously (non-blocking)
     conversationMessages.push({ role: 'assistant', content: fullResponse.trim() });
     ingestConversation(conversationMessages, sessionId).catch(err => {
       console.warn('Background UAIMC ingest failed:', err.message);
@@ -277,6 +304,21 @@ app.get('/api/v1/3d-map/search', async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error('3d-map search proxy error:', err.message);
+    res.status(502).json({ error: 'UAIMC unreachable' });
+  }
+});
+
+app.get('/api/v1/3d-map/oracle-search', async (req, res) => {
+  try {
+    const q = req.query.q || '';
+    const limit = parseInt(req.query.limit) || 30;
+    const resp = await fetch(`${UAIMC_URL}/api/v1/3d-map/oracle-search?q=${encodeURIComponent(q)}&limit=${limit}`, {
+      signal: AbortSignal.timeout(10000)
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    console.error('3d-map oracle-search proxy error:', err.message);
     res.status(502).json({ error: 'UAIMC unreachable' });
   }
 });
@@ -369,17 +411,38 @@ wss.on('connection', (ws, req) => {
       const ragContext = await buildRagContext(message);
       const systemPrompt = buildSystemPrompt(ragContext);
 
+      const mapNodesPromise = queryOracleSearch(message, 30).catch(err => {
+        console.warn('Oracle map search (WS) failed:', err.message);
+        return null;
+      });
+
       const llmStream = createDeepInfraStream([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ]);
 
+      let mapNodesSent = false;
+      const sendMapNodes = async () => {
+        const mapResult = await mapNodesPromise;
+        if (mapResult?.nodes?.length && !mapNodesSent && ws.readyState === ws.OPEN) {
+          mapNodesSent = true;
+          ws.send(JSON.stringify({ type: 'map_nodes', nodes: mapResult.nodes, query: message }));
+        }
+      };
+
       let fullResponse = '';
+      let firstChunk = true;
       for await (const event of sentenceBufferedStream(llmStream, ttsClient, TTS_VOICE, TTS_MODEL)) {
         if (ws.readyState !== ws.OPEN) break;
+        if (firstChunk && event.type === 'text') {
+          firstChunk = false;
+          await sendMapNodes();
+        }
         if (event.type === 'text') fullResponse += event.content + ' ';
         ws.send(JSON.stringify(event));
       }
+
+      if (!mapNodesSent) await sendMapNodes();
 
       conversationMessages.push({ role: 'assistant', content: fullResponse.trim() });
       ingestConversation(conversationMessages, sessionId).catch(err => {

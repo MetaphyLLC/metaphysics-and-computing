@@ -6566,7 +6566,149 @@ async def threed_map_search(
         mem._pool.put(conn)
 
 
-@app.get("/api/v1/3d-map/expand/{node_id:path}")
+@app.get("/api/v1/3d-map/oracle-search")
+async def threed_map_oracle_search(
+    q: str = Query(..., description="Natural language query from Oracle chat"),
+    limit: int = Query(30, ge=1, le=100, description="Max nodes to return"),
+):
+    """Intelligent search for 3D map driven by the Oracle's understanding.
+
+    Uses UAIMC's full query pipeline (keyword extraction, annotation, SimHash,
+    BM25, graph ranking) to find relevant knowledge, then cross-references
+    results against kg_nodes to return a diverse, story-telling set of 3D nodes.
+    """
+    mem = get_memory()
+    conn = mem._pool.get()
+    try:
+        await asyncio.to_thread(_ensure_kg_fts, conn)
+
+        def _oracle_search():
+            # Stage 1: Use the smart query pipeline for semantic-ish retrieval
+            smart_results = mem.query_text(q, limit=30, agent="ORACLE")
+
+            # Stage 2: Extract source identifiers from smart results
+            source_paths = set()
+            source_keywords = set()
+            for r in (smart_results or []):
+                src = r.get("source", "")
+                if src:
+                    source_paths.add(src)
+                    # Extract meaningful words from source path for cross-referencing
+                    for part in src.replace("/", " ").replace("\\", " ").replace("_", " ").replace("-", " ").split():
+                        if len(part) >= 3:
+                            source_keywords.add(part.lower())
+
+            # Stage 3: Find kg_nodes that match the intelligent results
+            matched_nodes = []
+            seen_ids = set()
+
+            # 3a: Direct source-path matching (file:source_path nodes)
+            if source_paths:
+                for src in source_paths:
+                    rows = conn.execute(
+                        "SELECT * FROM kg_nodes WHERE id LIKE ? LIMIT 5",
+                        (f"file:{src}%",),
+                    ).fetchall()
+                    for r in rows:
+                        if r["id"] not in seen_ids:
+                            matched_nodes.append(r)
+                            seen_ids.add(r["id"])
+
+            # 3b: FTS5 search using the original query terms
+            terms = [t.strip() for t in q.split() if len(t.strip()) >= 2]
+            if terms:
+                fts_parts = [f'"{t.replace(chr(34), chr(34)+chr(34))}"' for t in terms]
+                fts_query = " OR ".join(fts_parts)
+                try:
+                    fts_rows = conn.execute(
+                        "SELECT * FROM kg_nodes WHERE rowid IN "
+                        "(SELECT rowid FROM kg_nodes_fts WHERE kg_nodes_fts MATCH ?) "
+                        "ORDER BY complexity DESC LIMIT ?",
+                        (fts_query, limit * 3),
+                    ).fetchall()
+                    for r in fts_rows:
+                        if r["id"] not in seen_ids:
+                            matched_nodes.append(r)
+                            seen_ids.add(r["id"])
+                except Exception:
+                    pass
+
+            # 3c: Cross-reference source keywords against kg_nodes names
+            if source_keywords and len(matched_nodes) < limit:
+                top_kw = list(source_keywords)[:6]
+                for kw in top_kw:
+                    kw_rows = conn.execute(
+                        "SELECT * FROM kg_nodes WHERE name LIKE ? ORDER BY complexity DESC LIMIT 10",
+                        (f"%{kw}%",),
+                    ).fetchall()
+                    for r in kw_rows:
+                        if r["id"] not in seen_ids:
+                            matched_nodes.append(r)
+                            seen_ids.add(r["id"])
+
+            if not matched_nodes:
+                return []
+
+            # Stage 4: Type-diversity sampling (same logic as regular search)
+            by_type: dict[str, list] = {}
+            for r in matched_nodes:
+                by_type.setdefault(r["type"], []).append(r)
+
+            # Sort each group by complexity descending
+            for group in by_type.values():
+                group.sort(key=lambda r: r["complexity"] or 0, reverse=True)
+
+            priority_types = ["file", "function", "class", "agent_reference", "reference"]
+            filler_types = ["header", "config_key", "import"]
+
+            result = []
+            result_ids = set()
+
+            priority_budget = int(limit * 0.8)
+            round_idx = 0
+            while len(result) < priority_budget:
+                added_any = False
+                for kt in priority_types:
+                    group = by_type.get(kt, [])
+                    if round_idx < len(group):
+                        r = group[round_idx]
+                        if r["id"] not in result_ids:
+                            result.append(r)
+                            result_ids.add(r["id"])
+                            added_any = True
+                    if len(result) >= priority_budget:
+                        break
+                round_idx += 1
+                if not added_any:
+                    break
+
+            remaining = limit - len(result)
+            if remaining > 0:
+                for kt in filler_types:
+                    for r in by_type.get(kt, []):
+                        if r["id"] not in result_ids:
+                            result.append(r)
+                            result_ids.add(r["id"])
+                            remaining -= 1
+                            if remaining <= 0:
+                                break
+                    if remaining <= 0:
+                        break
+
+            if len(result) < limit:
+                for r in matched_nodes:
+                    if r["id"] not in result_ids:
+                        result.append(r)
+                        result_ids.add(r["id"])
+                        if len(result) >= limit:
+                            break
+
+            return [_kg_node_to_3d(r) for r in result]
+
+        nodes = await asyncio.to_thread(_oracle_search)
+        return {"query": q, "nodes": nodes, "count": len(nodes)}
+    finally:
+        mem._pool.put(conn)
 async def threed_map_expand(node_id: str):
     """Return the 1-hop neighborhood of a given node for graph expansion.
 

@@ -1273,6 +1273,45 @@ async function highlightForOracle(query) {
 
 window.highlightForOracle = highlightForOracle;
 
+function loadOracleNodes(nodes, query) {
+  if (!nodes || nodes.length === 0) return;
+
+  const statusText = document.getElementById('status-text');
+  const resetBtn = document.getElementById('reset-map-btn');
+  statusText.textContent = `Loading Oracle results...`;
+
+  clearMap();
+  populateMap(nodes, []);
+  isSearchView = true;
+
+  oracleHighlightNodes = new Set(nodes.map(n => n.id));
+  oracleHighlightStart = clock.getElapsedTime();
+
+  nodeMeshMap.forEach((mesh, nodeId) => {
+    if (mesh.material) {
+      mesh.material.opacity = oracleHighlightNodes.has(nodeId) ? 1.0 : 0.4;
+      if (oracleHighlightNodes.has(nodeId)) mesh.material.emissiveIntensity = 1.2;
+    }
+  });
+
+  if (resetBtn) resetBtn.style.display = 'block';
+  statusText.textContent = query
+    ? `"${query}" \u2014 ${nodes.length} nodes (Oracle)`
+    : `${nodes.length} nodes (Oracle)`;
+
+  const centroid = new THREE.Vector3();
+  let count = 0;
+  nodes.forEach(n => {
+    const mesh = nodeMeshMap.get(n.id);
+    if (mesh) { centroid.add(mesh.position); count++; }
+  });
+  if (count > 0) {
+    centroid.divideScalar(count);
+    flyToTarget(centroid, centroid.clone().add(new THREE.Vector3(15, 10, 80)));
+  }
+}
+window.loadOracleNodes = loadOracleNodes;
+
 function updateOracleHighlight(t) {
   if (oracleHighlightNodes.size === 0) return;
   const elapsed = t - oracleHighlightStart;
@@ -1520,17 +1559,12 @@ init();
         });
       }
 
-      var origSend = window.oracle.sendMessage.bind(window.oracle);
-      window.oracle.sendMessage = function (text) {
-        var result = origSend(text);
-        if (result && result.then) {
-          result.then(function () {
-            setTimeout(function () {
-              if (window.highlightForOracle) window.highlightForOracle(text);
-            }, 500);
-          });
+      window.oracle.onNdjsonEvent = function (data) {
+        if (data.type === 'map_nodes' && data.nodes && data.nodes.length > 0) {
+          if (window.loadOracleNodes) {
+            window.loadOracleNodes(data.nodes, data.query || '');
+          }
         }
-        return result;
       };
     }, 500);
   });
