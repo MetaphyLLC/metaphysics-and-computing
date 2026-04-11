@@ -22,10 +22,16 @@ from typing import Any, Callable, Optional
 
 logger = logging.getLogger("uaimc.guardian.tools")
 
-# ── AutoProjects Path ────────────────────────────────────────────────────────
+# ── Tool Paths ───────────────────────────────────────────────────────────────
+# Primary: bundled tools/ directory (works on Railway + local)
+_BUNDLED_TOOLS = str(Path(__file__).parent / "tools")
+if _BUNDLED_TOOLS not in sys.path:
+    sys.path.insert(0, _BUNDLED_TOOLS)
+
+# Fallback: local AutoProjects (Windows dev only)
 AUTOPROJECT_PATH = r"C:\Users\logan\OneDrive\Documents\AutoProjects"
-if AUTOPROJECT_PATH not in sys.path:
-    sys.path.insert(0, AUTOPROJECT_PATH)
+if Path(AUTOPROJECT_PATH).exists() and AUTOPROJECT_PATH not in sys.path:
+    sys.path.insert(1, AUTOPROJECT_PATH)
 
 # ── Tool Registry ────────────────────────────────────────────────────────────
 # Each entry: { "name": str, "class": type|None, "available": bool, "tier": 1|2 }
@@ -56,6 +62,12 @@ _import_tool("SQLSchemaDiff",      "SQLSchemaDiff.sqlschemadiff",     "DiffEngin
 _import_tool("ConversationThreadReconstructor",
              "ConversationThreadReconstructor.conversationthreadreconstructor",
              "ConversationThreadReconstructor", 1)
+
+# Tier 1 — Config-specified (2 tools previously missing from imports)
+_import_tool("EmotionalTextureAnalyzer",
+             "EmotionalTextureAnalyzer.emotionaltextureanalyzer",
+             "EmotionalTextureAnalyzer", 1)
+_import_tool("HashGuard",          "HashGuard.hashguard",             "HashGuard",          1)
 
 # Tier 2 — High Value (5 tools)
 _import_tool("MemoryBridge",       "MemoryBridge.memorybridge",       "MemoryBridge",       2)

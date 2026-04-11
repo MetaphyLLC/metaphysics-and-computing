@@ -29,6 +29,9 @@ COPY uaimc_watcher.py .
 COPY guardian_prompts.py .
 COPY guardian_tools.py .
 
+# ── Bundled AutoProject tools (14 tools, stdlib-only) ──────────────────────
+COPY tools/ tools/
+
 # ── Railway config override ────────────────────────────────────────────────
 # Overrides local config.json with Railway-appropriate settings:
 #   - host 0.0.0.0 (listen on all interfaces)
@@ -41,17 +44,15 @@ COPY config.railway.json config/config.json
 RUN mkdir -p /app/logs
 
 # ── Volume mount point for the 4GB SQLite ──────────────────────────────────
-# Railway persistent volume mounts at /data (configured via Railway dashboard/API).
-# The VOLUME directive is not used here — Railway manages volumes natively.
-RUN mkdir -p /data
+# Railway persistent volume mounts here. The DB file goes at /data/uaimc.db
+VOLUME /data
 
 # ── Entrypoint script (downloads DB on first boot) ─────────────────────────
 COPY start.railway.sh .
 RUN chmod +x start.railway.sh
 
 # ── Health check ───────────────────────────────────────────────────────────
-# Start-period gives time for initial DB download (~3.7GB) on first boot
-HEALTHCHECK --interval=30s --timeout=10s --start-period=600s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8765}/health || exit 1
 
 # ── Start ──────────────────────────────────────────────────────────────────
