@@ -570,7 +570,7 @@ function createEdgeLine(edge) {
 }
 
 // ─── Enhanced Particle System ───────────────────────────
-const PARTICLE_COUNT = 1200;
+const PARTICLE_COUNT = 680;
 const particleGeo = new THREE.BufferGeometry();
 const pPositions = new Float32Array(PARTICLE_COUNT * 3);
 const pColors = new Float32Array(PARTICLE_COUNT * 3);
@@ -594,7 +594,7 @@ for (let i = 0; i < PARTICLE_COUNT; i++) {
 
   const c = particleColors[Math.floor(Math.random() * particleColors.length)];
   pColors[i * 3] = c.r; pColors[i * 3 + 1] = c.g; pColors[i * 3 + 2] = c.b;
-  pSizes[i] = 0.4 + Math.random() * 2.0;
+  pSizes[i] = 0.3 + Math.random() * 1.2;
 
   const speed = 0.02 + Math.random() * 0.06;
   const spiralSpeed = 0.0005 + Math.random() * 0.002;
@@ -613,7 +613,7 @@ particleGeo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
 particleGeo.setAttribute('size', new THREE.BufferAttribute(pSizes, 1));
 
 const particleMat = new THREE.PointsMaterial({
-  size: 0.9, vertexColors: true, transparent: true, opacity: 0.5,
+  size: 0.6, vertexColors: true, transparent: true, opacity: 0.15,
   blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
 });
 const particleSystem = new THREE.Points(particleGeo, particleMat);
@@ -918,7 +918,7 @@ function selectNode(nodeId) {
 
   const mesh = nodeMeshMap.get(nodeId);
   if (mesh) {
-    flyToTarget(mesh.position.clone(), mesh.position.clone().add(new THREE.Vector3(25, 15, 30)));
+    flyToTarget(mesh.position.clone(), mesh.position.clone().add(new THREE.Vector3(10, 5, 60)));
   }
 
   if (!window.oracle || !window.oracle.panelOpen) {
@@ -960,7 +960,7 @@ function flyToTarget(target, camPos) {
 
 function updateCameraFly() {
   if (!cameraFlyActive) return;
-  flyProgress += 0.025;
+  flyProgress += 0.012;
   if (flyProgress >= 1) {
     flyProgress = 1;
     cameraFlyActive = false;
@@ -1099,7 +1099,7 @@ function renderSearchResults(nodes) {
       const nid = el.dataset.id;
       selectNode(nid);
       const mesh = nodeMeshMap.get(nid);
-      if (mesh) flyToTarget(mesh.position.clone(), mesh.position.clone().add(new THREE.Vector3(25, 15, 30)));
+      if (mesh) flyToTarget(mesh.position.clone(), mesh.position.clone().add(new THREE.Vector3(10, 5, 60)));
       toggleSearch(false);
     });
   });
@@ -1189,17 +1189,20 @@ async function highlightForOracle(query) {
 
     statusText.textContent = `Loading ${searchNodes.length} results...`;
 
-    const expandPromises = searchNodes.slice(0, expandLimit).map(async (n) => {
+    const expandResults = [];
+    for (const n of searchNodes.slice(0, expandLimit)) {
       try {
         const resp = await fetch(`${API_BASE}/api/v1/3d-map/expand/${encodeURIComponent(n.id)}`);
         if (resp.ok) {
           const data = await resp.json();
-          return { nodeId: n.id, edges: data.edges || [], nodes: data.nodes || [] };
+          expandResults.push({ nodeId: n.id, edges: data.edges || [], nodes: data.nodes || [] });
+        } else {
+          expandResults.push({ nodeId: n.id, edges: [], nodes: [] });
         }
-      } catch (e) {}
-      return { nodeId: n.id, edges: [], nodes: [] };
-    });
-    const expandResults = await Promise.all(expandPromises);
+      } catch (e) {
+        expandResults.push({ nodeId: n.id, edges: [], nodes: [] });
+      }
+    }
 
     const expandNodeMap = new Map();
     expandResults.forEach(r => {
@@ -1257,7 +1260,7 @@ async function highlightForOracle(query) {
     });
     if (count > 0) {
       centroid.divideScalar(count);
-      flyToTarget(centroid, centroid.clone().add(new THREE.Vector3(40, 25, 50)));
+      flyToTarget(centroid, centroid.clone().add(new THREE.Vector3(15, 10, 80)));
     }
 
   } catch (err) {
