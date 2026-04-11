@@ -1559,12 +1559,26 @@ init();
         });
       }
 
+      var mapNodesReceived = false;
+      var lastUserQuery = '';
+
       window.oracle.onNdjsonEvent = function (data) {
         if (data.type === 'map_nodes' && data.nodes && data.nodes.length > 0) {
+          mapNodesReceived = true;
           if (window.loadOracleNodes) {
-            window.loadOracleNodes(data.nodes, data.query || '');
+            window.loadOracleNodes(data.nodes, data.query || lastUserQuery);
           }
         }
+        if (data.type === 'done' && !mapNodesReceived && lastUserQuery) {
+          if (window.highlightForOracle) window.highlightForOracle(lastUserQuery);
+        }
+      };
+
+      var origSend = window.oracle.sendMessage.bind(window.oracle);
+      window.oracle.sendMessage = function (text) {
+        mapNodesReceived = false;
+        lastUserQuery = text;
+        return origSend(text);
       };
     }, 500);
   });
