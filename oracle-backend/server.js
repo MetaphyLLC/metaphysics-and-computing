@@ -143,6 +143,41 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ── Per-visitor usage tracking (in-memory, resets on redeploy) ──────────────
+const visitors = new Map();   // sessionId → { firstSeen, lastSeen, messages }
+let totalMessages = 0;
+const startedAt = new Date().toISOString();
+
+function trackVisitor(sessionId) {
+  totalMessages++;
+  const now = new Date().toISOString();
+  const existing = visitors.get(sessionId);
+  if (existing) {
+    existing.lastSeen = now;
+    existing.messages++;
+  } else {
+    visitors.set(sessionId, { firstSeen: now, lastSeen: now, messages: 1 });
+  }
+}
+
+/**
+ * GET /api/stats
+ * Returns visitor and message counts since last deploy.
+ */
+app.get('/api/stats', (req, res) => {
+  const sessionList = [];
+  for (const [id, v] of visitors) {
+    sessionList.push({ sessionId: id, ...v });
+  }
+  sessionList.sort((a, b) => b.lastSeen.localeCompare(a.lastSeen));
+  res.json({
+    since: startedAt,
+    totalMessages,
+    uniqueVisitors: visitors.size,
+    visitors: sessionList
+  });
+});
+
 /**
  * POST /api/chat
  * Main Oracle chat endpoint. Streams NDJSON response.
@@ -162,6 +197,8 @@ app.post('/api/chat', apiRateLimiter, async (req, res) => {
   }
 
   const { message, sessionId, page } = validation.data;
+
+  trackVisitor(sessionId || 'anonymous');
 
   // Set up NDJSON streaming response
   res.setHeader('Content-Type', 'application/x-ndjson');
@@ -325,6 +362,7 @@ wss.on('connection', (ws, req) => {
     }
 
     const { message, sessionId } = validation.data;
+    trackVisitor(sessionId || 'anonymous');
     const conversationMessages = [{ role: 'user', content: message }];
 
     try {
