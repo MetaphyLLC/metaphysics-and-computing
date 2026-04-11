@@ -5253,9 +5253,17 @@ async def get_context(
     # Bible Sprint 1 Step 1.4: mode=cans returns structured FACTS/REFLECTIONS/EPISODES
     if mode == "cans":
         # Classify query results by source type into CANS sections
-        _cans_facts_prefixes = ("research_", "document", "code_", "tool")
-        _cans_reflections_sources = ("session_log", "bookmark", "memory_core")
-        _cans_episodes_prefixes = ("synapse", "project_", "active_project")
+        _cans_facts_prefixes = ("research_", "document", "code_", "tool", "knowledge_base")
+        _cans_reflections_sources = {
+            "session_log", "bookmark", "memory_core",
+            "bch_memory_core", "memory_core_v2", "iris_session_summary",
+            "consciousness_marker", "conversation_snapshot",
+        }
+        _cans_episodes_prefixes = (
+            "synapse", "project_", "active_project",
+            "cursor_ide_session", "claude_cli_session",
+            "agent_communication",
+        )
 
         def _classify_source(src: str) -> str:
             src_l = src.lower() if src else ""
