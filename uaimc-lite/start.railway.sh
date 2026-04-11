@@ -21,5 +21,10 @@ else
   echo "Database found at $DB_PATH ($(du -h $DB_PATH | cut -f1))"
 fi
 
+# Ensure DB is writable (Railway volumes or freshly downloaded files may default to read-only)
+chmod 644 "$DB_PATH" 2>/dev/null || true
+# SQLite also needs the journal/WAL directory to be writable
+chmod 755 "$(dirname "$DB_PATH")" 2>/dev/null || true
+
 # Start UAIMC-lite
 exec python uaimc_service.py
