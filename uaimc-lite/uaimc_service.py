@@ -6232,6 +6232,128 @@ def _3d_map_position(node_id: str, vis_type: str) -> tuple[float, float, float]:
     return (x, y, z)
 
 
+def _dodecahedron_vertices(radius: float = 100.0) -> list[tuple[float, float, float]]:
+    """Return the 20 vertices of a regular dodecahedron scaled to `radius`."""
+    phi = (1 + math.sqrt(5)) / 2
+    inv_phi = 1 / phi
+    scale = radius / math.sqrt(3)
+    verts = []
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                verts.append((sx * scale, sy * scale, sz * scale))
+    for s1 in (-1, 1):
+        for s2 in (-1, 1):
+            verts.append((0, s1 * inv_phi * scale, s2 * phi * scale))
+            verts.append((s1 * inv_phi * scale, s2 * phi * scale, 0))
+            verts.append((s1 * phi * scale, 0, s2 * inv_phi * scale))
+    return verts
+
+
+def _dodecahedron_edges_idx() -> list[tuple[int, int]]:
+    """Return indices of the 30 edges of a regular dodecahedron.
+    Edges connect vertex pairs whose distance is minimal (2/phi * scale)."""
+    phi = (1 + math.sqrt(5)) / 2
+    inv_phi = 1 / phi
+    raw = []
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                raw.append((sx, sy, sz))
+    for s1 in (-1, 1):
+        for s2 in (-1, 1):
+            raw.append((0, s1 * inv_phi, s2 * phi))
+            raw.append((s1 * inv_phi, s2 * phi, 0))
+            raw.append((s1 * phi, 0, s2 * inv_phi))
+    edge_len_sq = (2 / phi) ** 2 + 0.01  # tolerance
+    edges = []
+    for i in range(len(raw)):
+        for j in range(i + 1, len(raw)):
+            dx = raw[i][0] - raw[j][0]
+            dy = raw[i][1] - raw[j][1]
+            dz = raw[i][2] - raw[j][2]
+            d2 = dx * dx + dy * dy + dz * dz
+            if d2 < edge_len_sq:
+                edges.append((i, j))
+    return edges
+
+
+def _dodecahedron_layout(
+    node_ids: list[str],
+    radius: float = 100.0,
+) -> tuple[dict[str, tuple[float, float, float]], list[tuple[str, str]]]:
+    """Place nodes along dodecahedron vertices and edges.
+    Returns (positions_dict, scaffold_edge_pairs).
+    Scaffold edges are (node_id, node_id) pairs tracing the dodecahedron wireframe."""
+    verts = _dodecahedron_vertices(radius)
+    edges_idx = _dodecahedron_edges_idx()
+    n = len(node_ids)
+    if n == 0:
+        return {}, []
+
+    positions: dict[str, tuple[float, float, float]] = {}
+
+    # Deterministic assignment: hash-based to keep stable across reloads
+    sorted_ids = sorted(node_ids, key=lambda nid: hash(nid) & 0xFFFFFFFF)
+
+    # How many nodes per edge (includes interpolated points, not the endpoint vertices)
+    n_verts = min(n, 20)
+    n_edge_nodes = n - n_verts
+    nodes_per_edge = max(1, n_edge_nodes // len(edges_idx)) if edges_idx else 0
+    leftover = n_edge_nodes - (nodes_per_edge * len(edges_idx)) if edges_idx else n_edge_nodes
+
+    # Place first 20 nodes at vertices (or fewer if n < 20)
+    vertex_node_ids = []
+    for i in range(n_verts):
+        nid = sorted_ids[i]
+        v = verts[i]
+        positions[nid] = (round(v[0], 2), round(v[1], 2), round(v[2], 2))
+        vertex_node_ids.append(nid)
+
+    # Place remaining nodes along edges with slight jitter
+    scaffold_pairs: list[tuple[str, str]] = []
+    cursor = n_verts
+    for edge_i, (vi, vj) in enumerate(edges_idx):
+        va = verts[vi]
+        vb = verts[vj]
+        count = nodes_per_edge + (1 if edge_i < leftover else 0)
+        edge_node_ids = []
+        for k in range(count):
+            if cursor >= n:
+                break
+            t = (k + 1) / (count + 1)
+            x = va[0] + (vb[0] - va[0]) * t
+            y = va[1] + (vb[1] - va[1]) * t
+            z = va[2] + (vb[2] - va[2]) * t
+            # Small jitter perpendicular to edge for visual depth
+            h = hash(sorted_ids[cursor]) & 0xFFFF
+            jx = ((h & 0xFF) / 255 - 0.5) * 3
+            jy = (((h >> 8) & 0xFF) / 255 - 0.5) * 3
+            nid = sorted_ids[cursor]
+            positions[nid] = (round(x + jx, 2), round(y + jy, 2), round(z, 2))
+            edge_node_ids.append(nid)
+            cursor += 1
+
+        # Build scaffold chain: vertex_a -> edge_node_0 -> edge_node_1 -> ... -> vertex_b
+        chain = [vertex_node_ids[vi]] + edge_node_ids + [vertex_node_ids[vj]] \
+            if vi < len(vertex_node_ids) and vj < len(vertex_node_ids) else edge_node_ids
+        for ci in range(len(chain) - 1):
+            scaffold_pairs.append((chain[ci], chain[ci + 1]))
+
+    # Any nodes that didn't fit get placed at a random vertex with jitter
+    while cursor < n:
+        nid = sorted_ids[cursor]
+        vi_idx = cursor % 20
+        v = verts[vi_idx]
+        h = hash(nid) & 0xFFFF
+        jx = ((h & 0xFF) / 255 - 0.5) * 6
+        jy = (((h >> 8) & 0xFF) / 255 - 0.5) * 6
+        positions[nid] = (round(v[0] + jx, 2), round(v[1] + jy, 2), round(v[2], 2))
+        cursor += 1
+
+    return positions, scaffold_pairs
+
+
 def _force_directed_layout(
     node_ids: list[str],
     edges: list[dict],
@@ -6392,13 +6514,12 @@ async def threed_map_overview():
                         node_rows.append(r)
                         seen_ids.add(r["id"])
 
-            # Build 3D nodes (initial positions — will be overridden by force layout)
+            # Build 3D nodes (initial positions — will be overridden by dodecahedron layout)
             nodes_3d = [_kg_node_to_3d(r) for r in node_rows]
 
             # Fetch edges between visible nodes only
             if seen_ids:
                 id_list = list(seen_ids)
-                # SQLite has a variable limit; batch if needed
                 batch_size = 500
                 edges_3d = []
                 for i in range(0, len(id_list), batch_size):
@@ -6422,16 +6543,28 @@ async def threed_map_overview():
             else:
                 edges_3d = []
 
-            # ── Force-directed layout: interwoven web, not type islands ──
+            # ── Dodecahedron layout: nodes along vertices and edges ──
             node_id_list = [n["id"] for n in nodes_3d]
-            positions = _force_directed_layout(node_id_list, edges_3d)
-            # Apply computed positions to nodes and update global cache
+            positions, scaffold_pairs = _dodecahedron_layout(node_id_list, radius=100.0)
             _3d_map_position_cache.clear()
             for n in nodes_3d:
                 if n["id"] in positions:
                     x, y, z = positions[n["id"]]
                     n["x"], n["y"], n["z"] = x, y, z
                     _3d_map_position_cache[n["id"]] = (x, y, z)
+
+            # Add scaffold edges (dodecahedron wireframe) to existing edges
+            edge_set = {(e["source"], e["target"]) for e in edges_3d}
+            edge_set |= {(e["target"], e["source"]) for e in edges_3d}
+            for src, tgt in scaffold_pairs:
+                if (src, tgt) not in edge_set and (tgt, src) not in edge_set:
+                    edges_3d.append({
+                        "source": src,
+                        "target": tgt,
+                        "type": "scaffold",
+                        "weight": 0.3,
+                    })
+                    edge_set.add((src, tgt))
 
             # Stats from cache or quick count
             total_nodes = conn.execute("SELECT COUNT(*) c FROM kg_nodes").fetchone()["c"]
@@ -6509,19 +6642,29 @@ async def threed_map_search(
             for r in rows:
                 by_type.setdefault(r["type"], []).append(r)
 
-            # Content-rich types get priority slots; structural types fill remainder
-            priority_types = ["file", "function", "class", "agent_reference", "reference"]
-            filler_types = ["header", "config_key", "import"]
+            structural_types = {"header", "config_key", "import"}
+            content_types = [t for t in by_type if t not in structural_types]
 
             result = []
             seen = set()
 
-            # Round-robin priority types first (up to 80% of limit)
-            priority_budget = int(limit * 0.8)
+            # Phase 1: Top-complexity content nodes (~40%)
+            core_budget = int(limit * 0.4)
+            core_pool = []
+            for t in content_types:
+                core_pool.extend(by_type[t])
+            core_pool.sort(key=lambda r: r["complexity"] or 0, reverse=True)
+            for r in core_pool[:core_budget]:
+                if r["id"] not in seen:
+                    result.append(r)
+                    seen.add(r["id"])
+
+            # Phase 2: Round-robin all content types for diversity (~40%)
+            support_budget = int(limit * 0.4)
             round_idx = 0
-            while len(result) < priority_budget:
+            while len(result) < core_budget + support_budget:
                 added_any = False
-                for kt in priority_types:
+                for kt in content_types:
                     group = by_type.get(kt, [])
                     if round_idx < len(group):
                         r = group[round_idx]
@@ -6529,27 +6672,25 @@ async def threed_map_search(
                             result.append(r)
                             seen.add(r["id"])
                             added_any = True
-                    if len(result) >= priority_budget:
+                    if len(result) >= core_budget + support_budget:
                         break
                 round_idx += 1
                 if not added_any:
                     break
 
-            # Fill remaining slots with filler types (headers etc.)
-            remaining = limit - len(result)
-            if remaining > 0:
-                for kt in filler_types:
-                    for r in by_type.get(kt, []):
-                        if r["id"] not in seen:
-                            result.append(r)
-                            seen.add(r["id"])
-                            remaining -= 1
-                            if remaining <= 0:
-                                break
-                    if remaining <= 0:
-                        break
+            # Phase 3: Structural types capped at 20%
+            struct_cap = int(limit * 0.2)
+            struct_added = 0
+            for kt in structural_types:
+                for r in by_type.get(kt, []):
+                    if r["id"] not in seen and struct_added < struct_cap:
+                        result.append(r)
+                        seen.add(r["id"])
+                        struct_added += 1
+                if struct_added >= struct_cap:
+                    break
 
-            # If still under limit, pull from any remaining types
+            # Phase 4: Fill remaining slots
             if len(result) < limit:
                 for r in rows:
                     if r["id"] not in seen:
@@ -6649,26 +6790,41 @@ async def threed_map_oracle_search(
             if not matched_nodes:
                 return []
 
-            # Stage 4: Type-diversity sampling (same logic as regular search)
+            # Stage 4: Story-telling diversity sampling
+            # Core answers (from smart pipeline) get ~40% of slots,
+            # supporting data types round-robin the rest (~40%),
+            # structural types (header/config_key/import) capped at ~20%.
+            structural_types = {"header", "config_key", "import"}
+
             by_type: dict[str, list] = {}
             for r in matched_nodes:
                 by_type.setdefault(r["type"], []).append(r)
 
-            # Sort each group by complexity descending
             for group in by_type.values():
                 group.sort(key=lambda r: r["complexity"] or 0, reverse=True)
 
-            priority_types = ["file", "function", "class", "agent_reference", "reference"]
-            filler_types = ["header", "config_key", "import"]
+            content_types = [t for t in by_type if t not in structural_types]
 
             result = []
             result_ids = set()
 
-            priority_budget = int(limit * 0.8)
+            # Phase 1: Core answers — top-complexity content nodes (~40%)
+            core_budget = int(limit * 0.4)
+            core_pool = []
+            for t in content_types:
+                core_pool.extend(by_type[t])
+            core_pool.sort(key=lambda r: r["complexity"] or 0, reverse=True)
+            for r in core_pool[:core_budget]:
+                if r["id"] not in result_ids:
+                    result.append(r)
+                    result_ids.add(r["id"])
+
+            # Phase 2: Diverse supporting nodes — round-robin all content types (~40%)
+            support_budget = int(limit * 0.4)
             round_idx = 0
-            while len(result) < priority_budget:
+            while len(result) < core_budget + support_budget:
                 added_any = False
-                for kt in priority_types:
+                for kt in content_types:
                     group = by_type.get(kt, [])
                     if round_idx < len(group):
                         r = group[round_idx]
@@ -6676,25 +6832,27 @@ async def threed_map_oracle_search(
                             result.append(r)
                             result_ids.add(r["id"])
                             added_any = True
-                    if len(result) >= priority_budget:
+                    if len(result) >= core_budget + support_budget:
                         break
                 round_idx += 1
                 if not added_any:
                     break
 
-            remaining = limit - len(result)
-            if remaining > 0:
-                for kt in filler_types:
+            # Phase 3: Structural types fill at most 20%
+            struct_budget = limit - len(result)
+            struct_cap = int(limit * 0.2)
+            struct_added = 0
+            if struct_budget > 0:
+                for kt in structural_types:
                     for r in by_type.get(kt, []):
-                        if r["id"] not in result_ids:
+                        if r["id"] not in result_ids and struct_added < struct_cap:
                             result.append(r)
                             result_ids.add(r["id"])
-                            remaining -= 1
-                            if remaining <= 0:
-                                break
-                    if remaining <= 0:
+                            struct_added += 1
+                    if struct_added >= struct_cap:
                         break
 
+            # Phase 4: Fill any remaining slots from all matched nodes
             if len(result) < limit:
                 for r in matched_nodes:
                     if r["id"] not in result_ids:
