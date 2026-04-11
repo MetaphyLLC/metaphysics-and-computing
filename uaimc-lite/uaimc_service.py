@@ -136,6 +136,7 @@ DB_PATH = os.environ.get("DB_PATH", CONFIG.get("ramdisk", {}).get("db_path", "U:
 BACKUP_DIR = Path(CONFIG.get("backup", {}).get("dir", str(Path(__file__).parent / "backup")))
 BACKUP_INTERVAL = CONFIG.get("backup", {}).get("interval_seconds", 300)
 _GPU_ENABLED = CONFIG.get("gpu", {}).get("enabled", True)
+_WRITABLE = os.environ.get("UAIMC_WRITABLE", "0").strip().lower() in ("1", "true", "yes")
 CONTEXT_LIMIT = CONFIG.get("context", {}).get("default_token_budget", 4000)
 MAX_CONTEXT = CONFIG.get("context", {}).get("max_token_budget", 8000)
 # RECENCY_BOOST_24H / _7D removed (dead code, superseded by _apply_temporal_scoring)
@@ -555,8 +556,10 @@ class ConnectionPool:
     )
 
     def __init__(self, db_path: str, size: int = 4):
-        effective_size = size if _GPU_ENABLED else min(size, 8)  # Railway: 8 (1 query + 4 scoring + 3 spare)
-        pragmas = self._PRAGMAS if _GPU_ENABLED else self._PRAGMAS_LITE
+        effective_size = size if _GPU_ENABLED else min(size, 8)
+        pragmas = list(self._PRAGMAS if _GPU_ENABLED else self._PRAGMAS_LITE)
+        if _WRITABLE and not _GPU_ENABLED:
+            pragmas = [p for p in pragmas if "query_only" not in p.lower()]
         self._pool: queue.Queue[sqlite3.Connection] = queue.Queue(maxsize=effective_size)
         self._size = effective_size
         for _ in range(effective_size):
@@ -602,14 +605,17 @@ class UnifiedMemory:
         else:
             self.db.execute("PRAGMA cache_size=-64000")   # 64MB page cache (Railway lite mode)
             self.db.execute("PRAGMA mmap_size=268435456") # 256MB mmap (Railway lite mode)
-            self.db.execute("PRAGMA query_only=ON")       # Read-only on Railway
+            if not _WRITABLE:
+                self.db.execute("PRAGMA query_only=ON")   # Read-only on Railway (override with UAIMC_WRITABLE=1)
+            else:
+                logger.info("Railway WRITABLE mode: query_only=OFF (UAIMC_WRITABLE=1)")
         self.db.execute("PRAGMA temp_store=MEMORY")    # Temp tables in RAM
-        if _GPU_ENABLED:
-            self.db.execute("PRAGMA optimize")          # OPT-011: Re-analyze table statistics (skip on read-only)
+        if _GPU_ENABLED or _WRITABLE:
+            self.db.execute("PRAGMA optimize")          # OPT-011: Re-analyze table statistics
         self._write_lock = threading.Lock()  # B10: serialize writes
         _pool_size = 16 if _GPU_ENABLED else 8  # Railway: 8 (avoids deadlock: 1 query + 4 scoring prefetch)
         self._pool = ConnectionPool(db_path, size=_pool_size)
-        if _GPU_ENABLED:
+        if _GPU_ENABLED or _WRITABLE:
             self._init_schema()
         else:
             logger.info("Railway lite mode: skipping schema init (query_only=ON)")
