@@ -234,7 +234,7 @@ app.post('/api/chat', apiRateLimiter, async (req, res) => {
       const mapResult = await mapNodesPromise;
       if (mapResult?.nodes?.length && !mapNodesSent) {
         mapNodesSent = true;
-        writeNdjsonEvent(res, { type: 'map_nodes', nodes: mapResult.nodes, query: message });
+        writeNdjsonEvent(res, { type: 'map_nodes', nodes: mapResult.nodes, edges: mapResult.edges || [], meta: mapResult.meta || {}, query: message });
       }
     };
 
@@ -426,7 +426,7 @@ wss.on('connection', (ws, req) => {
         const mapResult = await mapNodesPromise;
         if (mapResult?.nodes?.length && !mapNodesSent && ws.readyState === ws.OPEN) {
           mapNodesSent = true;
-          ws.send(JSON.stringify({ type: 'map_nodes', nodes: mapResult.nodes, query: message }));
+          ws.send(JSON.stringify({ type: 'map_nodes', nodes: mapResult.nodes, edges: mapResult.edges || [], meta: mapResult.meta || {}, query: message }));
         }
       };
 

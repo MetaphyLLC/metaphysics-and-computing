@@ -152,6 +152,7 @@ kbd{display:inline-block;padding:1px 6px;background:rgba(251,248,243,.08);border
   <div class="legend-item"><div class="legend-swatch" style="background:#34d399"></div>Agent</div>
   <div class="legend-item"><div class="legend-swatch" style="background:#f97316"></div>Project</div>
   <div class="legend-item"><div class="legend-swatch" style="background:#e2e8f0"></div>Session</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#60A5FA"></div>Document</div>
 </div>
 
 <script type="importmap">
@@ -175,7 +176,9 @@ const COLORS = {
   amber: 0xD4943C, indigo: 0x1A1225, gold: 0xFBF8F3, purple: 0x8B6FC0, teal: 0x3D8C8C,
   bg: 0x0A0E17,
   episode: 0x00e5ff, fact: 0x4ade80, concept: 0xfb923c, reflection: 0x8B6FC0,
-  birth_event: 0xfbbf24, agent: 0x34d399, project: 0xf97316, session: 0xe2e8f0
+  birth_event: 0xfbbf24, agent: 0x34d399, project: 0xf97316, session: 0xe2e8f0,
+  document: 0x60A5FA,
+  query_keyword: 0xD4943C, keyword_doc: 0x3D8C8C, doc_agent: 0x34d399
 };
 
 const NODE_TYPE_META = {
@@ -186,7 +189,8 @@ const NODE_TYPE_META = {
   birth_event: { color: COLORS.birth_event, label: 'Birth Event', geo: 'icosa',   size: 1.6 },
   agent:       { color: COLORS.agent,       label: 'Agent',       geo: 'hex',     size: 1.2 },
   project:     { color: COLORS.project,     label: 'Project',     geo: 'cube',    size: 1.1 },
-  session:     { color: COLORS.session,     label: 'Session',     geo: 'torus',   size: 0.9 }
+  session:     { color: COLORS.session,     label: 'Session',     geo: 'torus',   size: 0.9 },
+  document:    { color: COLORS.document,    label: 'Document',    geo: 'diamond', size: 1.2 }
 };
 
 const MAX_VISIBLE_NODES = 1000;
@@ -652,6 +656,18 @@ function createEdgeLine(edge) {
   if (edge.type === 'scaffold' || edge.state === 'scaffold') {
     mat = new THREE.LineBasicMaterial({
       color: COLORS.amber, transparent: true, opacity: 0.08
+    });
+  } else if (edge.type === 'query_keyword') {
+    mat = new THREE.LineBasicMaterial({
+      color: COLORS.query_keyword, transparent: true, opacity: 0.4
+    });
+  } else if (edge.type === 'keyword_doc') {
+    mat = new THREE.LineBasicMaterial({
+      color: COLORS.keyword_doc, transparent: true, opacity: 0.25
+    });
+  } else if (edge.type === 'doc_agent') {
+    mat = new THREE.LineBasicMaterial({
+      color: COLORS.doc_agent, transparent: true, opacity: 0.15
     });
   } else if (edge.state === 'suppressed') {
     mat = new THREE.LineDashedMaterial({
@@ -1387,25 +1403,57 @@ async function highlightForOracle(query) {
 
 window.highlightForOracle = highlightForOracle;
 
-function loadOracleNodes(nodes, query) {
+function loadOracleNodes(nodes, query, edges, meta) {
   if (!nodes || nodes.length === 0) return;
+  edges = edges || [];
+  meta = meta || {};
 
   const statusText = document.getElementById('status-text');
   const resetBtn = document.getElementById('reset-map-btn');
   statusText.textContent = `Loading Oracle results...`;
 
-  // Always apply fibonacci sphere layout for Oracle search results —
-  // API positions scatter nodes on a huge sphere making them hard to see.
-  // Place them tightly inside the dodecahedron shell for maximum visibility.
-  const r = SHELL_RADIUS * 0.65;
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-  nodes.forEach((n, i) => {
-    const y = 1 - (i / Math.max(nodes.length - 1, 1)) * 2;
-    const radiusAtY = Math.sqrt(1 - y * y);
-    const theta = goldenAngle * i;
-    n.x = Math.round(r * radiusAtY * Math.cos(theta) * 100) / 100;
-    n.y = Math.round(r * y * 100) / 100;
-    n.z = Math.round(r * radiusAtY * Math.sin(theta) * 100) / 100;
+  const queryId = meta.query_node_id || '';
+  const kwIds = new Set(meta.keyword_ids || []);
+  const agIds = new Set(meta.agent_ids || []);
+
+  // Layered radial layout: position nodes by role
+  const R_KW = 25, R_DOC = 55, R_AGENT = 80;
+  const kwNodes = [], docNodes = [], agNodes = [];
+  let queryNode = null;
+
+  nodes.forEach(n => {
+    if (n.id === queryId || n.id.startsWith('query:')) { queryNode = n; }
+    else if (kwIds.has(n.id) || n.id.startsWith('kw:')) { kwNodes.push(n); }
+    else if (agIds.has(n.id) || n.id.startsWith('agent:')) { agNodes.push(n); }
+    else { docNodes.push(n); }
+  });
+
+  // Center: query node
+  if (queryNode) { queryNode.x = 0; queryNode.y = 0; queryNode.z = 0; }
+
+  // Ring 1: keywords
+  kwNodes.forEach((n, i) => {
+    const angle = (2 * Math.PI * i) / Math.max(kwNodes.length, 1);
+    n.x = Math.round(R_KW * Math.cos(angle) * 100) / 100;
+    n.y = 0;
+    n.z = Math.round(R_KW * Math.sin(angle) * 100) / 100;
+  });
+
+  // Ring 2: documents — wider ring, slight y-offset by importance
+  docNodes.forEach((n, i) => {
+    const angle = (2 * Math.PI * i) / Math.max(docNodes.length, 1);
+    const imp = n.importance || 0.5;
+    n.x = Math.round(R_DOC * Math.cos(angle) * 100) / 100;
+    n.y = Math.round((imp - 0.5) * 20 * 100) / 100;
+    n.z = Math.round(R_DOC * Math.sin(angle) * 100) / 100;
+  });
+
+  // Ring 3: agents — outer ring
+  agNodes.forEach((n, i) => {
+    const angle = (2 * Math.PI * i) / Math.max(agNodes.length, 1);
+    n.x = Math.round(R_AGENT * Math.cos(angle) * 100) / 100;
+    n.y = 5;
+    n.z = Math.round(R_AGENT * Math.sin(angle) * 100) / 100;
   });
 
   clearMap();
@@ -1417,7 +1465,7 @@ function loadOracleNodes(nodes, query) {
     NODE_TYPE_META[k].size = (NODE_TYPE_META[k].size || 1.0) * 1.5;
   });
 
-  populateMap(nodes, []);
+  populateMap(nodes, edges);
 
   Object.keys(origMeta).forEach(k => { NODE_TYPE_META[k].size = origMeta[k]; });
 
@@ -1441,12 +1489,14 @@ function loadOracleNodes(nodes, query) {
   });
 
   if (resetBtn) resetBtn.style.display = 'block';
+
+  const nKw = kwNodes.length, nDoc = docNodes.length, nAg = agNodes.length;
   statusText.textContent = query
-    ? `"${query}" \u2014 ${nodes.length} nodes (Oracle)`
+    ? `"${query}" \u2014 ${nodes.length} nodes (${nDoc} docs, ${nKw} keywords, ${nAg} agents)`
     : `${nodes.length} nodes (Oracle)`;
 
-  // Camera: pull back enough to see all nodes inside the shell
-  flyToTarget(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 30, SHELL_RADIUS * 1.8));
+  // Camera: elevated view to see all concentric rings
+  flyToTarget(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 60, SHELL_RADIUS * 1.6));
 }
 window.loadOracleNodes = loadOracleNodes;
 
@@ -1708,7 +1758,7 @@ init();
         if (data.type === 'map_nodes' && data.nodes && data.nodes.length > 0) {
           mapNodesReceived = true;
           if (window.loadOracleNodes) {
-            window.loadOracleNodes(data.nodes, data.query || lastUserQuery);
+            window.loadOracleNodes(data.nodes, data.query || lastUserQuery, data.edges || [], data.meta || {});
           }
         }
       };

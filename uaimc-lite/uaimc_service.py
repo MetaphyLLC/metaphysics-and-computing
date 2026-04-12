@@ -6881,6 +6881,205 @@ async def threed_map_oracle_search(
         return {"query": q, "nodes": nodes, "count": len(nodes)}
     finally:
         mem._pool.put(conn)
+
+
+# ── Story Search: rich node synthesis from query_text() pipeline ─────────────
+
+_STORY_SOURCE_TYPE_MAP = {
+    "research_": "fact",
+    "document": "episode",
+    "code_": "fact",
+    "tool": "fact",
+    "knowledge_base": "fact",
+    "session_log": "session",
+    "bookmark": "reflection",
+    "memory_core": "reflection",
+    "bch_memory_core": "reflection",
+    "memory_core_v2": "reflection",
+    "iris_session_summary": "reflection",
+    "consciousness_marker": "birth_event",
+    "conversation_snapshot": "session",
+    "synapse": "episode",
+    "project_": "project",
+    "active_project": "project",
+    "cursor_ide_session": "episode",
+    "claude_cli_session": "episode",
+    "agent_communication": "episode",
+    "oracle_conversation": "session",
+}
+
+
+def _classify_story_type(source: str) -> str:
+    """Map a source string to a visualization node type."""
+    src = (source or "").lower()
+    for prefix, vtype in _STORY_SOURCE_TYPE_MAP.items():
+        if src.startswith(prefix) or prefix in src:
+            return vtype
+    return "fact"
+
+
+@app.get("/api/v1/3d-map/story-search")
+async def threed_map_story_search(
+    q: str = Query(..., description="Natural language query"),
+    limit: int = Query(30, ge=1, le=60, description="Max total nodes"),
+):
+    """Synthesize story-telling visualization nodes from the full query_text() pipeline.
+
+    Returns document nodes (actual content), agent nodes (authors), keyword
+    bridge nodes (matched tokens), a query center node, and edges connecting
+    them all — providing a layered narrative of HOW results were found and
+    WHO created the data.
+    """
+    mem = get_memory()
+
+    def _story_search():
+        doc_budget = max(limit - 11, 15)  # reserve ~11 slots for query+keywords+agents
+        raw = mem.query_text(q, limit=doc_budget, agent="ORACLE")
+        if not raw:
+            return {"query": q, "nodes": [], "edges": [], "meta": {}}
+
+        nodes = []
+        edges = []
+        seen_agents = {}
+        seen_keywords = {}
+        max_score = max((r.get("relevance_score", 0) for r in raw), default=1) or 1
+
+        # 1. Query center node
+        query_node_id = f"query:{q[:80]}"
+        nodes.append({
+            "id": query_node_id,
+            "label": q[:60],
+            "type": "birth_event",
+            "summary": f"Search query: {q}",
+            "importance": 1.0,
+            "author": "USER",
+            "source": "query",
+            "query_method": "center",
+            "matched_tokens": [],
+            "x": 0, "y": 0, "z": 0,
+        })
+
+        # 2. Document nodes from query results
+        for i, r in enumerate(raw):
+            summary_text = r.get("summary", "") or ""
+            src = r.get("source", "") or ""
+            author = r.get("author", "") or "UNKNOWN"
+            score = r.get("relevance_score", 0)
+            tokens = r.get("matched_tokens", []) or []
+            method = r.get("query_method", "fts5") or "fts5"
+            sid = r.get("summary_id", i)
+
+            doc_id = f"doc:{sid}"
+            vis_type = _classify_story_type(src)
+
+            nodes.append({
+                "id": doc_id,
+                "label": summary_text[:60] or src[:60] or f"Result {i+1}",
+                "type": vis_type,
+                "summary": summary_text[:200],
+                "importance": round(score / max_score, 3),
+                "author": author,
+                "source": src,
+                "query_method": method,
+                "matched_tokens": tokens[:5],
+                "x": 0, "y": 0, "z": 0,
+            })
+
+            # Collect agents
+            if author and author != "UNKNOWN":
+                agent_id = f"agent:{author}"
+                if agent_id not in seen_agents:
+                    seen_agents[agent_id] = {"count": 0, "author": author}
+                seen_agents[agent_id]["count"] += 1
+
+            # Collect keywords
+            for tok in tokens[:5]:
+                kw_id = f"kw:{tok.lower()}"
+                if kw_id not in seen_keywords:
+                    seen_keywords[kw_id] = {"count": 0, "token": tok}
+                seen_keywords[kw_id]["count"] += 1
+
+        # 3. Keyword bridge nodes (top 5 by frequency)
+        keyword_items = sorted(seen_keywords.items(), key=lambda x: x[1]["count"], reverse=True)[:5]
+        keyword_ids = []
+        for kw_id, info in keyword_items:
+            keyword_ids.append(kw_id)
+            nodes.append({
+                "id": kw_id,
+                "label": info["token"],
+                "type": "concept",
+                "summary": f"Keyword: {info['token']} (matched {info['count']} docs)",
+                "importance": round(min(info["count"] / max(len(raw), 1), 1.0), 3),
+                "author": "",
+                "source": "keyword_extraction",
+                "query_method": "bridge",
+                "matched_tokens": [],
+                "x": 0, "y": 0, "z": 0,
+            })
+
+        # 4. Agent nodes (top 5 by frequency)
+        agent_items = sorted(seen_agents.items(), key=lambda x: x[1]["count"], reverse=True)[:5]
+        agent_ids = []
+        for ag_id, info in agent_items:
+            agent_ids.append(ag_id)
+            nodes.append({
+                "id": ag_id,
+                "label": info["author"],
+                "type": "agent",
+                "summary": f"Agent: {info['author']} (authored {info['count']} results)",
+                "importance": round(min(info["count"] / max(len(raw), 1), 1.0), 3),
+                "author": info["author"],
+                "source": "agent_provenance",
+                "query_method": "provenance",
+                "matched_tokens": [],
+                "x": 0, "y": 0, "z": 0,
+            })
+
+        # 5. Generate edges
+        # query -> keywords
+        for kw_id in keyword_ids:
+            edges.append({
+                "source": query_node_id, "target": kw_id,
+                "type": "query_keyword", "weight": 0.8,
+            })
+
+        # keyword -> documents (keyword appeared in that doc's matched_tokens)
+        for n in nodes:
+            if n["id"].startswith("doc:"):
+                doc_tokens_lower = {t.lower() for t in (n.get("matched_tokens") or [])}
+                for kw_id, info in keyword_items:
+                    if info["token"].lower() in doc_tokens_lower:
+                        edges.append({
+                            "source": kw_id, "target": n["id"],
+                            "type": "keyword_doc", "weight": 0.5,
+                        })
+
+        # document -> agent (author link)
+        for n in nodes:
+            if n["id"].startswith("doc:") and n.get("author") and n["author"] != "UNKNOWN":
+                ag_id = f"agent:{n['author']}"
+                if ag_id in seen_agents:
+                    edges.append({
+                        "source": n["id"], "target": ag_id,
+                        "type": "doc_agent", "weight": 0.3,
+                    })
+
+        # Enforce total node limit
+        if len(nodes) > limit:
+            nodes = nodes[:limit]
+
+        meta = {
+            "query_node_id": query_node_id,
+            "keyword_ids": keyword_ids,
+            "agent_ids": agent_ids,
+            "doc_count": sum(1 for n in nodes if n["id"].startswith("doc:")),
+        }
+        return {"query": q, "nodes": nodes, "edges": edges, "meta": meta}
+
+    result = await asyncio.to_thread(_story_search)
+    return result
+
+
 async def threed_map_expand(node_id: str):
     """Return the 1-hop neighborhood of a given node for graph expansion.
 

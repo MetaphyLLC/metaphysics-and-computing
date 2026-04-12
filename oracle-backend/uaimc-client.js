@@ -174,7 +174,7 @@ async function buildRagContext(userMessage) {
  * @returns {Promise<Object>} 3D-map-compatible node results
  */
 async function queryOracleSearch(query, limit = 30) {
-  const url = `${UAIMC_URL}/api/v1/3d-map/oracle-search?q=${encodeURIComponent(query)}&limit=${limit}`;
+  const url = `${UAIMC_URL}/api/v1/3d-map/story-search?q=${encodeURIComponent(query)}&limit=${limit}`;
   const resp = await fetch(url, { signal: AbortSignal.timeout(10000), keepalive: true });
   if (!resp.ok) throw new Error(`Oracle search failed: ${resp.status}`);
   return resp.json();
