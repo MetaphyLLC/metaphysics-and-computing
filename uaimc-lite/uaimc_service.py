@@ -6965,7 +6965,11 @@ async def threed_map_story_search(
             src = r.get("source", "") or ""
             author = r.get("author", "") or "UNKNOWN"
             score = r.get("relevance_score", 0)
-            tokens = r.get("matched_tokens", []) or []
+            tokens_raw = r.get("matched_tokens", "") or ""
+            if isinstance(tokens_raw, str):
+                tokens = [t.strip() for t in tokens_raw.split(",") if t.strip() and len(t.strip()) >= 2]
+            else:
+                tokens = [t for t in tokens_raw if isinstance(t, str) and len(t.strip()) >= 2]
             method = r.get("query_method", "fts5") or "fts5"
             sid = r.get("summary_id", i)
 
