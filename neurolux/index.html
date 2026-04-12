@@ -328,6 +328,141 @@ const shellGlow = new THREE.Mesh(
 );
 shellGroup.add(shellGlow);
 
+// ─── Shell Dissolution + Reveal Animation System ────────
+let shellDissolveActive = false;
+let shellDissolveStart = 0;
+let shellDissolveDir = 0; // 1 = dissolving out, -1 = fading in
+const SHELL_DISSOLVE_DUR = 0.8;
+
+let glitterBurstGroup = null;
+let glitterBurstStart = 0;
+let glitterBurstActive = false;
+const GLITTER_COUNT = 200;
+const GLITTER_DUR = 1.5;
+
+let revealAnimations = []; // {mesh, targetScale, startTime, delay, type:'node'|'edge', edgeTarget}
+
+function spawnGlitterBurst() {
+  if (glitterBurstGroup) { scene.remove(glitterBurstGroup); glitterBurstGroup = null; }
+  const verts = getDodecahedronVertices(SHELL_RADIUS);
+  const edgesIdx = getDodecahedronEdgesIdx();
+  const spawnPoints = [];
+  verts.forEach(v => spawnPoints.push(v.clone()));
+  edgesIdx.forEach(([a, b]) => {
+    for (let t = 0.2; t <= 0.8; t += 0.2) {
+      spawnPoints.push(verts[a].clone().lerp(verts[b], t));
+    }
+  });
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(GLITTER_COUNT * 3);
+  const col = new Float32Array(GLITTER_COUNT * 3);
+  const sizes = new Float32Array(GLITTER_COUNT);
+  const amberCol = new THREE.Color(COLORS.amber);
+  const goldCol = new THREE.Color(COLORS.gold);
+  for (let i = 0; i < GLITTER_COUNT; i++) {
+    const sp = spawnPoints[i % spawnPoints.length];
+    pos[i * 3] = sp.x + (Math.random() - 0.5) * 4;
+    pos[i * 3 + 1] = sp.y + (Math.random() - 0.5) * 4;
+    pos[i * 3 + 2] = sp.z + (Math.random() - 0.5) * 4;
+    const c = Math.random() > 0.5 ? amberCol : goldCol;
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    sizes[i] = 0.5 + Math.random() * 1.5;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  const mat = new THREE.PointsMaterial({
+    size: 1.2, vertexColors: true, transparent: true, opacity: 0.6,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
+  });
+  glitterBurstGroup = new THREE.Points(geo, mat);
+  glitterBurstGroup._velocities = [];
+  for (let i = 0; i < GLITTER_COUNT; i++) {
+    const nx = pos[i * 3], ny = pos[i * 3 + 1], nz = pos[i * 3 + 2];
+    const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+    const speed = 0.3 + Math.random() * 0.6;
+    glitterBurstGroup._velocities.push({
+      vx: (nx / len) * speed + (Math.random() - 0.5) * 0.2,
+      vy: (ny / len) * speed + (Math.random() - 0.5) * 0.2,
+      vz: (nz / len) * speed + (Math.random() - 0.5) * 0.2
+    });
+  }
+  scene.add(glitterBurstGroup);
+  glitterBurstStart = clock.getElapsedTime();
+  glitterBurstActive = true;
+}
+
+function dissolveShell(direction) {
+  shellDissolveDir = direction;
+  shellDissolveStart = clock.getElapsedTime();
+  shellDissolveActive = true;
+  if (direction === 1) spawnGlitterBurst();
+}
+
+function updateShellDissolve(t) {
+  if (shellDissolveActive) {
+    const elapsed = t - shellDissolveStart;
+    const p = Math.min(elapsed / SHELL_DISSOLVE_DUR, 1);
+    if (shellDissolveDir === 1) {
+      shellWireMat.opacity = 0.10 * (1 - p);
+      shellGlowMat.opacity = 0.015 * (1 - p);
+    } else {
+      shellWireMat.opacity = 0.10 * p;
+      shellGlowMat.opacity = 0.015 * p;
+    }
+    if (p >= 1) shellDissolveActive = false;
+  }
+
+  if (glitterBurstActive && glitterBurstGroup) {
+    const elapsed = t - glitterBurstStart;
+    const p = Math.min(elapsed / GLITTER_DUR, 1);
+    const positions = glitterBurstGroup.geometry.attributes.position.array;
+    const vels = glitterBurstGroup._velocities;
+    for (let i = 0; i < GLITTER_COUNT; i++) {
+      positions[i * 3] += vels[i].vx;
+      positions[i * 3 + 1] += vels[i].vy;
+      positions[i * 3 + 2] += vels[i].vz;
+      vels[i].vx *= 0.98; vels[i].vy *= 0.98; vels[i].vz *= 0.98;
+    }
+    glitterBurstGroup.geometry.attributes.position.needsUpdate = true;
+    glitterBurstGroup.material.opacity = 0.6 * (1 - p * p);
+    if (p >= 1) {
+      scene.remove(glitterBurstGroup);
+      glitterBurstGroup.geometry.dispose();
+      glitterBurstGroup.material.dispose();
+      glitterBurstGroup = null;
+      glitterBurstActive = false;
+    }
+  }
+
+  // Node scale-in and edge grow animations
+  if (revealAnimations.length > 0) {
+    const now = t;
+    let remaining = [];
+    for (const anim of revealAnimations) {
+      const elapsed = now - anim.startTime - anim.delay;
+      if (elapsed < 0) { remaining.push(anim); continue; }
+      const dur = anim.type === 'node' ? 0.6 : 0.8;
+      const p = Math.min(elapsed / dur, 1);
+      const ease = p * p * (3 - 2 * p);
+      if (anim.type === 'node') {
+        const s = anim.targetScale * ease;
+        anim.mesh.scale.setScalar(s);
+        if (anim.mesh.material) anim.mesh.material.opacity = Math.min(ease, 0.92);
+      } else if (anim.type === 'edge') {
+        const posArr = anim.mesh.geometry.attributes.position.array;
+        posArr[3] = anim.edgeStart.x + (anim.edgeTarget.x - anim.edgeStart.x) * ease;
+        posArr[4] = anim.edgeStart.y + (anim.edgeTarget.y - anim.edgeStart.y) * ease;
+        posArr[5] = anim.edgeStart.z + (anim.edgeTarget.z - anim.edgeStart.z) * ease;
+        anim.mesh.geometry.attributes.position.needsUpdate = true;
+        if (anim.mesh.material) anim.mesh.material.opacity = anim.finalOpacity * ease;
+      }
+      if (p < 1) remaining.push(anim);
+    }
+    revealAnimations = remaining;
+  }
+}
+
 // ─── Dodecahedral Layout Utility ────────────────────────
 function getDodecahedronVertices(radius) {
   const phi = (1 + Math.sqrt(5)) / 2;
@@ -524,19 +659,45 @@ function clearMap() {
   allEdges = [];
 }
 
-function populateMap(nodes, edges) {
+function populateMap(nodes, edges, animated) {
   allNodes = nodes;
   allEdges = edges;
   const visible = allNodes.slice(0, MAX_VISIBLE_NODES);
-  visible.forEach(n => createNodeMesh(n));
-  allEdges.forEach(e => createEdgeLine(e));
+  const t = clock.getElapsedTime();
+  visible.forEach((n, i) => {
+    const mesh = createNodeMesh(n);
+    if (animated && mesh) {
+      const targetScale = mesh.scale.x;
+      mesh.scale.setScalar(0);
+      if (mesh.material) mesh.material.opacity = 0;
+      revealAnimations.push({ type: 'node', mesh, targetScale, startTime: t, delay: i * 0.02 });
+    }
+  });
+  allEdges.forEach((e, i) => {
+    createEdgeLine(e);
+    if (animated) {
+      const line = edgeGroup.children[edgeGroup.children.length - 1];
+      if (line && line.geometry) {
+        const posArr = line.geometry.attributes.position.array;
+        const edgeStart = new THREE.Vector3(posArr[0], posArr[1], posArr[2]);
+        const edgeTarget = new THREE.Vector3(posArr[3], posArr[4], posArr[5]);
+        posArr[3] = posArr[0]; posArr[4] = posArr[1]; posArr[5] = posArr[2];
+        line.geometry.attributes.position.needsUpdate = true;
+        const finalOpacity = line.material.opacity;
+        line.material.opacity = 0;
+        revealAnimations.push({ type: 'edge', mesh: line, edgeStart, edgeTarget, finalOpacity, startTime: t, delay: 0.3 + i * 0.015 });
+      }
+    }
+  });
   updateStatusBar();
 }
 
 function resetToOverview() {
   clearMap();
+  revealAnimations = [];
   populateMap([...overviewNodes], [...overviewEdges]);
   isSearchView = false;
+  dissolveShell(-1); // fade shell back in
   const resetBtn = document.getElementById('reset-map-btn');
   if (resetBtn) resetBtn.style.display = 'none';
   const txt = document.getElementById('status-text');
@@ -1024,7 +1185,13 @@ function selectNode(nodeId) {
 
   const mesh = nodeMeshMap.get(nodeId);
   if (mesh) {
-    flyToTarget(mesh.position.clone(), mesh.position.clone().add(new THREE.Vector3(10, 5, 60)));
+    const nodePos = mesh.position.clone();
+    const dir = nodePos.clone().normalize();
+    if (dir.length() < 0.01) dir.copy(camera.position).normalize();
+    const camDist = Math.max(nodePos.length() + 60, SHELL_RADIUS * 0.9);
+    const camPos = dir.multiplyScalar(camDist);
+    camPos.y += 15;
+    flyToTarget(nodePos, camPos);
   }
 
   if (!window.oracle || !window.oracle.panelOpen) {
@@ -1361,13 +1528,15 @@ async function highlightForOracle(query) {
     });
 
     clearMap();
+    revealAnimations = [];
+    dissolveShell(1);
 
     const origSz = {};
     Object.keys(NODE_TYPE_META).forEach(k => {
       origSz[k] = NODE_TYPE_META[k].size;
       NODE_TYPE_META[k].size = (NODE_TYPE_META[k].size || 1.0) * 1.5;
     });
-    populateMap(finalNodes, allSearchEdges);
+    populateMap(finalNodes, allSearchEdges, true);
     Object.keys(origSz).forEach(k => { NODE_TYPE_META[k].size = origSz[k]; });
 
     isSearchView = true;
@@ -1457,6 +1626,10 @@ function loadOracleNodes(nodes, query, edges, meta) {
   });
 
   clearMap();
+  revealAnimations = [];
+
+  // Dissolve the dodecahedron shell with glitter burst
+  dissolveShell(1);
 
   // Slightly larger nodes for search results
   const origMeta = {};
@@ -1465,7 +1638,7 @@ function loadOracleNodes(nodes, query, edges, meta) {
     NODE_TYPE_META[k].size = (NODE_TYPE_META[k].size || 1.0) * 1.5;
   });
 
-  populateMap(nodes, edges);
+  populateMap(nodes, edges, true);
 
   Object.keys(origMeta).forEach(k => { NODE_TYPE_META[k].size = origMeta[k]; });
 
@@ -1619,6 +1792,7 @@ function animate() {
 
   updateEntrySequence(t);
   updateCameraFly();
+  updateShellDissolve(t);
 
   coreMesh.rotation.y = t * 0.12;
   coreMesh.rotation.x = Math.sin(t * 0.08) * 0.08;
