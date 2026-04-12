@@ -1330,9 +1330,33 @@ async function highlightForOracle(query) {
 
     const finalNodes = [...searchNodes, ...bridgeNodes];
 
+    // Apply fibonacci sphere layout for consistent visibility
+    const r2 = SHELL_RADIUS * 0.65;
+    const ga2 = Math.PI * (3 - Math.sqrt(5));
+    finalNodes.forEach((n, i) => {
+      const y = 1 - (i / Math.max(finalNodes.length - 1, 1)) * 2;
+      const rY = Math.sqrt(1 - y * y);
+      const th = ga2 * i;
+      n.x = Math.round(r2 * rY * Math.cos(th) * 100) / 100;
+      n.y = Math.round(r2 * y * 100) / 100;
+      n.z = Math.round(r2 * rY * Math.sin(th) * 100) / 100;
+    });
+
     clearMap();
+
+    const origSz = {};
+    Object.keys(NODE_TYPE_META).forEach(k => {
+      origSz[k] = NODE_TYPE_META[k].size;
+      NODE_TYPE_META[k].size = (NODE_TYPE_META[k].size || 1.0) * 2.5;
+    });
     populateMap(finalNodes, allSearchEdges);
+    Object.keys(origSz).forEach(k => { NODE_TYPE_META[k].size = origSz[k]; });
+
     isSearchView = true;
+
+    finalNodes.forEach(n => {
+      if (!labelSpriteMap.has(n.id) && n.label) createLabel(n);
+    });
 
     oracleHighlightNodes = new Set(searchNodes.map(n => n.id));
     oracleHighlightStart = clock.getElapsedTime();
@@ -1348,8 +1372,7 @@ async function highlightForOracle(query) {
     });
     if (count > 0) {
       centroid.divideScalar(count);
-      const camPos = new THREE.Vector3(0, 40, SHELL_RADIUS * 2.2);
-      flyToTarget(centroid, camPos);
+      flyToTarget(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 30, SHELL_RADIUS * 1.8));
     }
 
   } catch (err) {
@@ -1369,25 +1392,42 @@ function loadOracleNodes(nodes, query) {
   const resetBtn = document.getElementById('reset-map-btn');
   statusText.textContent = `Loading Oracle results...`;
 
-  // Ensure every node has valid 3D positions — if API didn't provide them
-  // or they're all at origin, spread them in a fibonacci sphere layout.
-  const needsLayout = nodes.every(n => (!n.x && !n.y && !n.z) || (n.x === 0 && n.y === 0 && n.z === 0));
-  if (needsLayout) {
-    const r = SHELL_RADIUS * 0.75;
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-    nodes.forEach((n, i) => {
-      const y = 1 - (i / Math.max(nodes.length - 1, 1)) * 2;
-      const radiusAtY = Math.sqrt(1 - y * y);
-      const theta = goldenAngle * i;
-      n.x = Math.round(r * radiusAtY * Math.cos(theta) * 100) / 100;
-      n.y = Math.round(r * y * 100) / 100;
-      n.z = Math.round(r * radiusAtY * Math.sin(theta) * 100) / 100;
-    });
-  }
+  // Always apply fibonacci sphere layout for Oracle search results —
+  // API positions scatter nodes on a huge sphere making them hard to see.
+  // Place them tightly inside the dodecahedron shell for maximum visibility.
+  const r = SHELL_RADIUS * 0.65;
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  nodes.forEach((n, i) => {
+    const y = 1 - (i / Math.max(nodes.length - 1, 1)) * 2;
+    const radiusAtY = Math.sqrt(1 - y * y);
+    const theta = goldenAngle * i;
+    n.x = Math.round(r * radiusAtY * Math.cos(theta) * 100) / 100;
+    n.y = Math.round(r * y * 100) / 100;
+    n.z = Math.round(r * radiusAtY * Math.sin(theta) * 100) / 100;
+  });
 
   clearMap();
+
+  // Use a bigger scale for search result nodes so they're clearly visible
+  const origMeta = {};
+  Object.keys(NODE_TYPE_META).forEach(k => {
+    origMeta[k] = NODE_TYPE_META[k].size;
+    NODE_TYPE_META[k].size = (NODE_TYPE_META[k].size || 1.0) * 2.5;
+  });
+
   populateMap(nodes, []);
+
+  // Restore original sizes
+  Object.keys(origMeta).forEach(k => { NODE_TYPE_META[k].size = origMeta[k]; });
+
   isSearchView = true;
+
+  // Force labels on all search result nodes
+  nodes.forEach(n => {
+    if (!labelSpriteMap.has(n.id) && n.label) {
+      createLabel(n);
+    }
+  });
 
   oracleHighlightNodes = new Set(nodes.map(n => n.id));
   oracleHighlightStart = clock.getElapsedTime();
@@ -1404,10 +1444,8 @@ function loadOracleNodes(nodes, query) {
     ? `"${query}" \u2014 ${nodes.length} nodes (Oracle)`
     : `${nodes.length} nodes (Oracle)`;
 
-  // Camera: fly to a position that can see the full sphere of results
-  const camTarget = new THREE.Vector3(0, 0, 0);
-  const camPos = new THREE.Vector3(0, 40, SHELL_RADIUS * 2.2);
-  flyToTarget(camTarget, camPos);
+  // Camera: pull back enough to see all nodes inside the shell
+  flyToTarget(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 30, SHELL_RADIUS * 1.8));
 }
 window.loadOracleNodes = loadOracleNodes;
 
