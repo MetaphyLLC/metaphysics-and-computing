@@ -36,8 +36,16 @@ from typing import Any, Optional
 
 logger = logging.getLogger("uaimc.tools")
 
-# ── AutoProjects Path ────────────────────────────────────────────────────────
+# ── Tool Paths ────────────────────────────────────────────────────────────────
+# Primary: bundled tools/ directory (works on Railway + local)
+_BUNDLED_TOOLS = Path(__file__).parent / "tools"
+if str(_BUNDLED_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_BUNDLED_TOOLS))
+
+# Fallback: local AutoProjects (Windows dev only)
 AUTOPROJECT_PATH = Path(r"C:\Users\logan\OneDrive\Documents\AutoProjects")
+if AUTOPROJECT_PATH.exists() and str(AUTOPROJECT_PATH) not in sys.path:
+    sys.path.insert(1, str(AUTOPROJECT_PATH))
 
 # ── Lazy Imports (tools loaded on first use) ─────────────────────────────────
 _eta_instance = None
@@ -57,10 +65,7 @@ def _get_eta():
     if _eta_instance is not None:
         return _eta_instance
     try:
-        eta_path = AUTOPROJECT_PATH / "EmotionalTextureAnalyzer"
-        if str(eta_path) not in sys.path:
-            sys.path.insert(0, str(eta_path))
-        from emotionaltextureanalyzer import EmotionalTextureAnalyzer
+        from EmotionalTextureAnalyzer.emotionaltextureanalyzer import EmotionalTextureAnalyzer
         _eta_instance = EmotionalTextureAnalyzer()
         logger.info("EmotionalTextureAnalyzer loaded successfully")
         return _eta_instance
@@ -121,10 +126,7 @@ def _get_hashguard():
     if _hashguard_instance is not None:
         return _hashguard_instance
     try:
-        hg_path = AUTOPROJECT_PATH / "HashGuard"
-        if str(hg_path) not in sys.path:
-            sys.path.insert(0, str(hg_path))
-        from hashguard import HashGuard
+        from HashGuard.hashguard import HashGuard
         _hashguard_instance = HashGuard()
         logger.info("HashGuard loaded successfully")
         return _hashguard_instance
@@ -219,9 +221,7 @@ def _load_schema_diff():
     if _schema_diff_loaded:
         return True
     try:
-        sd_path = AUTOPROJECT_PATH / "SQLSchemaDiff"
-        if str(sd_path) not in sys.path:
-            sys.path.insert(0, str(sd_path))
+        from SQLSchemaDiff.sqlschemadiff import auto_parse, DiffEngine, MigrationGenerator  # noqa: F401
         _schema_diff_loaded = True
         logger.info("SQLSchemaDiff loaded successfully")
         return True
@@ -239,7 +239,7 @@ def check_schema_drift(live_db_path: str, backup_db_path: str) -> dict:
         return {"drifted": False, "details": "One or both databases not found"}
     try:
         if _load_schema_diff():
-            from sqlschemadiff import auto_parse, DiffEngine, MigrationGenerator
+            from SQLSchemaDiff.sqlschemadiff import auto_parse, DiffEngine, MigrationGenerator
             live_snap = auto_parse(live_db_path)
             backup_snap = auto_parse(backup_db_path)
             diff = DiffEngine().diff(live_snap, backup_snap)
@@ -383,11 +383,7 @@ def _get_token_tracker(db_path: str = None):
     if _token_tracker_instance is not None:
         return _token_tracker_instance
     try:
-        tt_path = AUTOPROJECT_PATH / "TokenTracker"
-        if str(tt_path) not in sys.path:
-            sys.path.insert(0, str(tt_path))
-        from tokentracker import TokenTracker
-        # Store usage data alongside UAIMC
+        from TokenTracker.tokentracker import TokenTracker
         tracker_db = Path(db_path).parent / "token_usage.db" if db_path else Path(__file__).parent / "data" / "token_usage.db"
         _token_tracker_instance = TokenTracker(db_path=tracker_db)
         logger.info(f"TokenTracker loaded, DB: {tracker_db}")
@@ -439,10 +435,7 @@ def _get_knowledge_sync():
     if _knowledge_sync_instance is not None:
         return _knowledge_sync_instance
     try:
-        ks_path = AUTOPROJECT_PATH / "KnowledgeSync"
-        if str(ks_path) not in sys.path:
-            sys.path.insert(0, str(ks_path))
-        from knowledgesync import KnowledgeSync
+        from KnowledgeSync.knowledgesync import KnowledgeSync
         _knowledge_sync_instance = KnowledgeSync(agent="UAIMC")
         logger.info("KnowledgeSync loaded successfully")
         return _knowledge_sync_instance
@@ -560,12 +553,8 @@ def register_with_mcp_bridge() -> dict:
     Returns status of registration attempt.
     """
     try:
-        mb_path = AUTOPROJECT_PATH / "MCPBridge"
-        if str(mb_path) not in sys.path:
-            sys.path.insert(0, str(mb_path))
-        from mcpbridge import ProtocolBridge
+        from MCPBridge.mcpbridge import ProtocolBridge  # noqa: F401
         tools = get_mcp_tool_definitions()
-        # MCPBridge registration is best-effort
         logger.info(f"MCP tool definitions ready: {len(tools)} tools")
         return {
             "status": "ready",
@@ -629,7 +618,9 @@ def get_tools_status() -> dict:
         ("JSONQuery", "Query annotation data"),
         ("TextTransform", "Format conversion utilities"),
     ]:
-        tool_path = AUTOPROJECT_PATH / tool_name
+        tool_path = _BUNDLED_TOOLS / tool_name
+        if not tool_path.exists():
+            tool_path = AUTOPROJECT_PATH / tool_name
         status[tool_name] = {
             "tier": 2, "loaded": False,
             "available": tool_path.exists(),
